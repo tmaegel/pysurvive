@@ -1,0 +1,12 @@
+# python
+*.pyc
+__pycache__
+
+# other
+data
+TODO
+
+# ctags
+tags
+tags.lock
+tags.temp
