@@ -10,17 +10,13 @@ from pygame.locals import (
 from config import (
     FPS,
     BLACK,
-    RED,
-    BLUE,
-    GREEN,
-    YELLOW,
+    WHITE,
     SCREEN_RECT,
 )
 
 from utils import load_image
 
 from world import World
-from wall import Wall
 from player import Player
 
 
@@ -60,7 +56,7 @@ def main():
     screen_shadow = pg.Surface(screen.get_size())
     screen_shadow = screen_shadow.convert()
     screen_shadow.set_alpha(220)
-    screen_shadow.set_colorkey((255, 255, 255))
+    screen_shadow.set_colorkey(WHITE)
 
     #
     # Prepare game objects
@@ -73,7 +69,7 @@ def main():
     player = Player(world)
     allsprites = pg.sprite.RenderPlain((player,))
 
-    # Main Loop
+    # Main loop
     clock = pg.time.Clock()
     running = True
     while running:

@@ -2,14 +2,15 @@ import math
 import pygame as pg
 
 from config import (
-    GREEN,
     RED_LIGHT,
-    GRAY_LIGHT,
     WHITE,
 )
 
 
 class Flashlight():
+
+    # Define the radius of the view circle at the player position
+    view_circle_radius = 50
 
     light_rays = []
 
@@ -25,59 +26,17 @@ class Flashlight():
         # Reference to the world object
         self.world = _world
 
-        # Get all unique points (corners) of wall segments.
-        # Prevent duplication of x, y coordinates.
-        self.unique_wall_points = []
-        for wall in self.world.wall_segments:
-            point1 = (wall.x1, wall.y1)
-            point2 = (wall.x2, wall.y2)
-            if point1 not in self.unique_wall_points:
-                self.unique_wall_points.append(point1)
-            if point2 not in self.unique_wall_points:
-                self.unique_wall_points.append(point2)
-
         self.update(self.x0, self.y0, self.light_angle)
 
-    def update(self, x0, y0, angle):
-        self.x0 = x0
-        self.y0 = y0
-        self.light_angle = angle
+    def update(self, _x0, _y0, _angle):
+        self.x0 = _x0
+        self.y0 = _y0
+        self.light_angle = _angle
 
-        ray1, ray2 = self._get_edge_rays()
-
-        # For each (unique) line segment end point cast a ray directly towards
-        # plus two more rays offset by +/- 0.00001 radians. The two extra rays
-        # are needed to hit the wall(s) behind any given segment corner.
-        unique_angles = [ray1.angle, ray2.angle]
-        for point in self.unique_wall_points:
-            # @todo: dict to tuple
-            point = (point[0], point[1])
-            # Build the triangle from x0, y0 (player position) and both
-            # farthest intersections with the walls.
-            triangle = ((ray1.x1, ray1.y1),
-                        (ray1.intersect['x'], ray1.intersect['y']),
-                        (ray2.intersect['x'], ray2.intersect['y']))
-            # Consider points that are in the view only
-            if self._is_point_in_view(point, triangle):
-                angle = (math.atan2(
-                    point[1] - self.y0,
-                    point[0] - self.x0)
-                    + 2 * math.pi) % (2 * math.pi)
-                unique_angles.append(angle-0.00001)
-                unique_angles.append(angle)
-                unique_angles.append(angle+0.00001)
-
-        self.light_rays = []
-        # With the resulting angles we can now calculate the intersection
-        # between wall and light ray.
-        for angle in unique_angles:
-            light_ray = LightRay(self.x0, self.y0, angle)
-            light_ray.intersect = self._get_intersection(light_ray)
-            if light_ray.intersect:
-                self.light_rays.append(light_ray)
-
-        # Sort the rays by angle
-        self.light_rays.sort(key=lambda x: x.angle)
+        # Update the single rays of the current view
+        self.light_rays = self._get_sight_rays(
+            self.x0 - math.cos(self.light_angle) * self.view_circle_radius,
+            self.y0 - math.sin(self.light_angle) * self.view_circle_radius)
 
     def _get_intersection(self, ray, closest=True):
         """
@@ -91,18 +50,19 @@ class Flashlight():
         :rtype: Dict
         """
         result_intersect = None
-        for wall in self.world.wall_segments:
-            intersect = self._calc_intersection(ray, wall)
-            if not intersect:
-                continue
-            if closest:
-                if (not result_intersect or
-                        intersect['param'] < result_intersect['param']):
-                    result_intersect = intersect
-            else:
-                if (not result_intersect or
-                        intersect['param'] > result_intersect['param']):
-                    result_intersect = intersect
+        for wall in self.world.walls:
+            for segment in wall.wall_segments:
+                intersect = self._calc_intersection(ray, segment)
+                if not intersect:
+                    continue
+                if closest:
+                    if (not result_intersect or
+                            intersect['param'] < result_intersect['param']):
+                        result_intersect = intersect
+                else:
+                    if (not result_intersect or
+                            intersect['param'] > result_intersect['param']):
+                        result_intersect = intersect
 
         return result_intersect
 
@@ -156,7 +116,51 @@ class Flashlight():
             'param': T1
         }
 
-    def _get_edge_rays(self):
+    def _get_sight_rays(self, _x0, _y0):
+        """
+        Returns a list with all rays towards to the unique wall points
+        and within the player vision range based on x0 and y0.
+
+        :return light_rays: List of rays
+        :rtype: List
+        """
+        light_rays = []
+        ray1, ray2 = self._get_edge_rays(_x0, _y0)
+
+        # For each (unique) line segment end point cast a ray directly towards
+        # plus two more rays offset by +/- 0.00001 radians. The two extra rays
+        # are needed to hit the wall(s) behind any given segment corner.
+        unique_angles = [ray1.angle, ray2.angle]
+        for point in self.world.unique_wall_points:
+            point = (point[0], point[1])
+            # Build the triangle from x0, y0 (player position) and both
+            # farthest intersections with the walls.
+            triangle = ((_x0, _y0),
+                        (ray1.intersect['x'], ray1.intersect['y']),
+                        (ray2.intersect['x'], ray2.intersect['y']))
+            # Consider points that are in the view only
+            if self._is_point_in_view(point, triangle):
+                angle = (math.atan2(
+                    point[1] - _y0,
+                    point[0] - _x0) + 2 * math.pi) % (2 * math.pi)
+                unique_angles.append(angle-0.00001)
+                unique_angles.append(angle)
+                unique_angles.append(angle+0.00001)
+
+        # With the resulting angles we can now calculate the intersection
+        # between wall and light ray.
+        for angle in unique_angles:
+            light_ray = LightRay(_x0, _y0, angle)
+            light_ray.intersect = self._get_intersection(light_ray)
+            if light_ray.intersect:
+                light_rays.append(light_ray)
+
+        # Sort the rays by angle
+        light_rays.sort(key=lambda x: x.angle)
+
+        return light_rays
+
+    def _get_edge_rays(self, _x0, _y0):
         """
         To limit the field of view / flashlight the edge rays are needed.
         To calculate the endpositions of the rays the farthest intersection
@@ -170,7 +174,7 @@ class Flashlight():
         :rtype: Object LightRay
         """
         ray1 = LightRay(
-            self.x0, self.y0, self.light_angle + self.light_range / 2)
+            _x0, _y0, self.light_angle + self.light_range / 2)
         ray1.intersect = self._get_intersection(ray1, closest=False)
         ray1.intersect['x'] = int(
             (ray1.intersect['x'] + math.cos(ray1.angle) * 1000))
@@ -178,7 +182,7 @@ class Flashlight():
             (ray1.intersect['y'] + math.sin(ray1.angle) * 1000))
 
         ray2 = LightRay(
-            self.x0, self.y0, self.light_angle - self.light_range / 2)
+            _x0, _y0, self.light_angle - self.light_range / 2)
         ray2.intersect = self._get_intersection(ray2, closest=False)
         ray2.intersect['x'] = int(
             (ray2.intersect['x'] + math.cos(ray2.angle) * 1000))
@@ -187,7 +191,7 @@ class Flashlight():
 
         return ray1, ray2
 
-    def _is_point_in_view(self, point, triangle):
+    def _is_point_in_view(self, _point, _triangle):
         """
         Returns True if the point is inside the triangle and returns False
         if it falls outside.
@@ -204,10 +208,10 @@ class Flashlight():
         on the same side for each of the triangle's segments.
         """
         # Unpack arguments
-        x, y = point
-        ax, ay = triangle[0]
-        bx, by = triangle[1]
-        cx, cy = triangle[2]
+        x, y = _point
+        ax, ay = _triangle[0]
+        bx, by = _triangle[1]
+        cx, cy = _triangle[2]
         # Segment A to B
         side_1 = (x - bx) * (ay - by) - (ax - bx) * (y - by)
         # Segment B to C
@@ -218,7 +222,7 @@ class Flashlight():
         # All the signs must be positive or all negative
         return (side_1 < 0.0) == (side_2 < 0.0) == (side_3 < 0.0)
 
-    def _get_light_polygon(self):
+    def _get_sight_polygon(self, _rays):
         """
         This returns a list with all points represented the view (flashlight).
 
@@ -231,16 +235,20 @@ class Flashlight():
         :rtype: List
         """
         polygon = []
+        # Remove the x0, y0 coordinates behind the player to increase the range
+        # of the view at the zero point.
+        new_x0 = self.x0 - math.cos(self.light_angle) * self.view_circle_radius
+        new_y0 = self.y0 - math.sin(self.light_angle) * self.view_circle_radius
         append_origin = False
         init_ray = None
         ray_prev = None
-        for i, ray in enumerate(self.light_rays):
+        for i, ray in enumerate(_rays):
             if i == 0:
                 init_ray = ray
                 polygon.append((ray.intersect['x'], ray.intersect['y']))
             else:
                 if abs(ray.angle - ray_prev.angle) > self.light_range:
-                    polygon.append((self.x0, self.y0))
+                    polygon.append((new_x0, new_y0))
                     append_origin = True
                 polygon.append(
                     (ray.intersect['x'], ray.intersect['y']))
@@ -251,16 +259,34 @@ class Flashlight():
             polygon.append(
                 (init_ray.intersect['x'], init_ray.intersect['y']))
         else:
-            polygon.append((self.x0, self.y0))
+            polygon.append((new_x0, new_y0))
 
         return polygon
 
     def draw(self, screen):
-        polygon = self._get_light_polygon()
+
+        # fuzzy_radius = 20
+        # angle = 0
+        # polygons = []
+        # while angle < (math.pi * 2):
+        #     dx = math.cos(angle) * fuzzy_radius
+        #     dy = math.sin(angle) * fuzzy_radius
+        #     polygons.append(self._get_sight_rays(self.x0 + dx, self.y0 + dy))
+        #     angle += math.pi * 2 / 10
+
+        # c = 0
+        # for p in polygons:
+        #     c += 10
+        #     p_shadow = self._get_sight_polygon(p)
+        #     if len(p_shadow) > 2:
+        #         pg.draw.polygon(screen, (c, c, c), p_shadow)
+
+        # Draw the sight polygon and the view circle
+        polygon = self._get_sight_polygon(self.light_rays)
         if len(polygon) > 2:
             pg.draw.polygon(screen, WHITE, polygon)
         pg.draw.circle(screen, WHITE,
-                       (self.x0, self.y0), 50)
+                       (self.x0, self.y0), self.view_circle_radius)
 
 
 class LightRay():
