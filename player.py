@@ -14,17 +14,18 @@ class Player(pg.sprite.Sprite):
 
     light = None
 
-    def __init__(self, world):
+    def __init__(self, _world):
         # call Sprite initializer
         pg.sprite.Sprite.__init__(self)
 
-        self.image_original, _ = load_image('player/handgun/move/0.png')
+        self.image_original, _ = load_image(
+            'player/handgun/move/0.png', alpha=True)
         self.image_scaled = pg.transform.scale(self.image_original, (72, 72))
         self.image = self.image_original
         self.rect = self.image.get_rect(midbottom=SCREEN_RECT.midbottom)
 
         # Reference to the world object
-        self.world = world
+        self.world = _world
 
         # Store x and y position in extra variable because we need
         # floating accuracy.

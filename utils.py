@@ -8,7 +8,7 @@ from config import (
 )
 
 
-def load_image(name, alpha=True, colorkey=None):
+def load_image(name, alpha=False, colorkey=None):
     # create a full pathname to the file
     fullname = os.path.join(ASSETS_DIR + 'img/', name)
     try:

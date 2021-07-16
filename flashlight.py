@@ -13,28 +13,30 @@ class Flashlight():
 
     light_rays = []
 
-    def __init__(self, x0, y0, angle, world):
-        self.x0 = x0
-        self.y0 = y0
+    def __init__(self, _x0, _y0, _angle, _world):
+        self.x0 = _x0
+        self.y0 = _y0
         # Initial angle (direction) of light.
-        self.light_angle = angle
+        self.light_angle = _angle
         # Range of flashlight, e.g. 90 degree.
         # From light_angle -45° and +45°
         self.light_range = math.pi / 4
 
         # Reference to the world object
-        self.world = world
+        self.world = _world
 
         # Get all unique points (corners) of wall segments.
         # Prevent duplication of x, y coordinates.
         self.unique_wall_points = []
-        for wall in world.wall_segments:
+        for wall in self.world.wall_segments:
             point1 = (wall.x1, wall.y1)
             point2 = (wall.x2, wall.y2)
             if point1 not in self.unique_wall_points:
                 self.unique_wall_points.append(point1)
             if point2 not in self.unique_wall_points:
                 self.unique_wall_points.append(point2)
+
+        self.update(self.x0, self.y0, self.light_angle)
 
     def update(self, x0, y0, angle):
         self.x0 = x0
@@ -71,7 +73,8 @@ class Flashlight():
         for angle in unique_angles:
             light_ray = LightRay(self.x0, self.y0, angle)
             light_ray.intersect = self._get_intersection(light_ray)
-            self.light_rays.append(light_ray)
+            if light_ray.intersect:
+                self.light_rays.append(light_ray)
 
         # Sort the rays by angle
         self.light_rays.sort(key=lambda x: x.angle)
@@ -228,29 +231,27 @@ class Flashlight():
         :rtype: List
         """
         polygon = []
+        append_origin = False
         init_ray = None
         ray_prev = None
         for i, ray in enumerate(self.light_rays):
             if i == 0:
                 init_ray = ray
-                polygon.append([ray.intersect['x'], ray.intersect['y']])
+                polygon.append((ray.intersect['x'], ray.intersect['y']))
             else:
                 if abs(ray.angle - ray_prev.angle) > self.light_range:
-                    polygon.append([self.x0, self.y0])
-
-                if ray.intersect:
-                    polygon.append(
-                        [ray.intersect['x'], ray.intersect['y']])
-                # else:
-                #     print("warn: no point added to light polygon.")
+                    polygon.append((self.x0, self.y0))
+                    append_origin = True
+                polygon.append(
+                    (ray.intersect['x'], ray.intersect['y']))
 
             ray_prev = ray
 
-        if [self.x0, self.y0] in polygon:
+        if append_origin:
             polygon.append(
-                [init_ray.intersect['x'], init_ray.intersect['y']])
+                (init_ray.intersect['x'], init_ray.intersect['y']))
         else:
-            polygon.append([self.x0, self.y0])
+            polygon.append((self.x0, self.y0))
 
         return polygon
 
@@ -258,6 +259,8 @@ class Flashlight():
         polygon = self._get_light_polygon()
         if len(polygon) > 2:
             pg.draw.polygon(screen, WHITE, polygon)
+        pg.draw.circle(screen, WHITE,
+                       (self.x0, self.y0), 50)
 
 
 class LightRay():
@@ -283,4 +286,4 @@ class LightRay():
                          (self.x1, self.y1),
                          (self.intersect['x'], self.intersect['y']))
             pg.draw.circle(screen, RED_LIGHT,
-                           [self.intersect['x'], self.intersect['y']], 4)
+                           (self.intersect['x'], self.intersect['y']), 4)

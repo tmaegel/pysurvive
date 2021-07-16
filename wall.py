@@ -7,11 +7,11 @@ from config import (
 
 class Wall():
 
-    def __init__(self, x1, y1, x2, y2):
-        self.x1 = x1
-        self.y1 = y1
-        self.x2 = x2
-        self.y2 = y2
+    def __init__(self, _x1, _y1, _x2, _y2):
+        self.x1 = _x1
+        self.y1 = _y1
+        self.x2 = _x2
+        self.y2 = _y2
 
     def draw(self, screen):
         pg.draw.line(screen, GRAY_LIGHT,
