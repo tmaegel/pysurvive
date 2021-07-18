@@ -7,17 +7,18 @@ from config import (
 
 class Wall(pg.sprite.Sprite):
 
-    def __init__(self, _world, _x, _y, _width, _height):
+    def __init__(self, _game, _x, _y, _width, _height):
         pg.sprite.Sprite.__init__(self)
 
-        self.world = _world
-        # Real position of the wall in the world
+        self.game = _game
+        # Real position of the wall in the game world
         self.x = _x
         self.y = _y
         self.width = _width
         self.height = _height
 
         self.image = pg.Surface([self.width, self.height])
+        self.image.fill(GRAY)
         self.rect = self.image.get_rect()
 
         # Set position for drawing only
@@ -38,11 +39,8 @@ class Wall(pg.sprite.Sprite):
 
     def update(self):
         # Update x, y position of the rect for drawing only
-        self.rect.x += self.world.dx
-        self.rect.y += self.world.dy
-
-    def draw(self, screen):
-        pg.draw.rect(screen, GRAY, self.rect, 1)
+        self.rect.x += self.game.dx
+        self.rect.y += self.game.dy
 
     def get_wall_points(self):
         return ((self.x, self.y),

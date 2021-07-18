@@ -30,7 +30,7 @@ class Player(pg.sprite.Sprite):
         'shotgun',
     ]
 
-    def __init__(self, _world):
+    def __init__(self, _game):
         # call Sprite initializer
         pg.sprite.Sprite.__init__(self)
 
@@ -64,12 +64,12 @@ class Player(pg.sprite.Sprite):
         # The position of image/rect used for drawing only
         self.rect.center = (SCREEN_RECT.width//2, SCREEN_RECT.height//2)
 
-        # Real position of the player in the world
+        # Real position of the player in the game world
         self.x = self.rect.centerx
         self.y = self.rect.centery
 
-        # Reference to the world object
-        self.world = _world
+        # Reference to the game object
+        self.game = _game
 
         # self.feets = PlayerFeet(self)
         # Initialize the light (flashlight) with x and y from player
@@ -81,12 +81,12 @@ class Player(pg.sprite.Sprite):
         Move the player in the specific direction.
         """
         # self.rect.move_ip(*[d * self.speed for d in direction])
-        self.world.set_offset(-1 * direction[0] * self.speed,
-                              -1 * direction[1] * self.speed)
+        self.game.set_offset(-1 * direction[0] * self.speed,
+                             -1 * direction[1] * self.speed)
 
         # Add the negate value of dx and dy to the player position
-        self.x = self.x - self.world.dx
-        self.y = self.y - self.world.dy
+        self.x = self.x - self.game.dx
+        self.y = self.y - self.game.dy
 
         self.rotate(self.get_angle())
         self.animate(direction)

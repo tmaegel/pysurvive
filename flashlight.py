@@ -39,7 +39,7 @@ class Flashlight():
         :rtype: Dict
         """
         result_intersect = None
-        for wall in self.player.world.walls:
+        for wall in self.player.game.walls:
             for segment in wall.wall_segments:
                 intersect = self._calc_intersection(ray, segment)
                 if not intersect:
@@ -121,7 +121,7 @@ class Flashlight():
         # are needed to hit the wall(s) behind any given segment corner.
         # unique_angles = [ray1.angle, ray2.angle]
         unique_angles = []
-        for point in self.player.world.unique_wall_points:
+        for point in self.player.game.unique_wall_points:
             # point = (point[0], point[1])
             # Build the triangle from x0, y0 (player position) and both
             # farthest intersections with the walls.
@@ -248,8 +248,8 @@ class Flashlight():
         #     polygon.append((self.x0, self.y0))
 
         for ray in _rays:
-            polygon.append((ray.intersect['x'] + self.player.world.get_offset()[0],
-                            ray.intersect['y'] + self.player.world.get_offset()[1]))
+            polygon.append((ray.intersect['x'] + self.player.game.get_offset()[0],
+                            ray.intersect['y'] + self.player.game.get_offset()[1]))
 
         return polygon
 
@@ -280,7 +280,7 @@ class Flashlight():
         #     ray.draw(screen,
         #              self.player.get_virt_x(),
         #              self.player.get_virt_y(),
-        #              self.player.world.get_offset())
+        #              self.player.game.get_offset())
 
 
 class LightRay():
