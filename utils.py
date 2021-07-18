@@ -1,16 +1,19 @@
 import os
 import pygame as pg
-
 from pygame.locals import RLEACCEL
 
 from config import (
-    ASSETS_DIR,
+    IMAGE_DIR,
+    SOUND_DIR,
 )
 
 
-def load_image(name, alpha=False, colorkey=None):
+def load_image(name, alpha=False, colorkey=None, path=True):
     # create a full pathname to the file
-    fullname = os.path.join(ASSETS_DIR + 'img/', name)
+    if path:
+        fullname = os.path.join(IMAGE_DIR, name)
+    else:
+        fullname = name
     try:
         image = pg.image.load(fullname)
     except pg.error as message:
@@ -38,7 +41,7 @@ def load_sound(name):
         return NoneSound()
 
     # create a full pathname to the file
-    fullname = os.path.join(ASSETS_DIR + 'sounds/', name)
+    fullname = os.path.join(SOUND_DIR, name)
     try:
         sound = pg.mixer.Sound(fullname)
     except pg.error as message:

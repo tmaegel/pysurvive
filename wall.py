@@ -1,15 +1,17 @@
 import pygame as pg
 
 from config import (
-    BLUE_LIGHT,
+    GRAY
 )
 
 
 class Wall(pg.sprite.Sprite):
 
-    def __init__(self, _x, _y, _width, _height):
+    def __init__(self, _world, _x, _y, _width, _height):
         pg.sprite.Sprite.__init__(self)
 
+        self.world = _world
+        # Real position of the wall in the world
         self.x = _x
         self.y = _y
         self.width = _width
@@ -17,6 +19,8 @@ class Wall(pg.sprite.Sprite):
 
         self.image = pg.Surface([self.width, self.height])
         self.rect = self.image.get_rect()
+
+        # Set position for drawing only
         self.rect.x = self.x
         self.rect.y = self.y
 
@@ -32,10 +36,13 @@ class Wall(pg.sprite.Sprite):
         self.wall_segments.append(
             WallSegment(self.x, self.y + self.height, self.x, self.y))
 
+    def update(self):
+        # Update x, y position of the rect for drawing only
+        self.rect.x += self.world.dx
+        self.rect.y += self.world.dy
+
     def draw(self, screen):
-        # pg.draw.line(screen, GRAY_LIGHT,
-        #              (self.x1, self.y1), (self.x2, self.y2), 2)
-        pg.draw.rect(screen, BLUE_LIGHT, self.rect)
+        pg.draw.rect(screen, GRAY, self.rect, 1)
 
     def get_wall_points(self):
         return ((self.x, self.y),

@@ -9,13 +9,11 @@ from pygame.locals import (
 )
 from config import (
     FPS,
+    COLORKEY,
     BLACK,
-    WHITE,
+    RED_LIGHT,
     SCREEN_RECT,
 )
-
-from utils import load_image
-
 from world import World
 from player import Player
 
@@ -40,23 +38,11 @@ def main():
     # Turn off the mouse cursor
     # pg.mouse.set_visible(0)
 
-    # Prepare the background surface / screen
-    screen_bg = pg.Surface(screen.get_size())
-    screen_bg = screen_bg.convert()
-    bg_image, _ = load_image('textures/stone_floor1.png', alpha=True)
-    bg_image = pg.transform.scale(bg_image, (256, 256))
-    bg_width = bg_image.get_size()[0]
-    bg_height = bg_image.get_size()[1]
-    for x in range(SCREEN_RECT.width // bg_width + 1):
-        for y in range(SCREEN_RECT.height // bg_height + 1):
-            screen_bg.blit(bg_image, (x * bg_width, y * bg_height))
-    screen.blit(screen_bg, (0, 0))
-
     # Prepare the shadow surface / screeb
     screen_shadow = pg.Surface(screen.get_size())
     screen_shadow = screen_shadow.convert()
-    screen_shadow.set_alpha(220)
-    screen_shadow.set_colorkey(WHITE)
+    screen_shadow.set_alpha(245)
+    screen_shadow.set_colorkey(COLORKEY)
 
     #
     # Prepare game objects
@@ -64,10 +50,11 @@ def main():
 
     # World
     world = World()
+    world_sprites = pg.sprite.RenderPlain((world.rooms, world.walls))
 
     # Player
     player = Player(world)
-    allsprites = pg.sprite.RenderPlain((player,))
+    player_sprites = pg.sprite.RenderPlain((player,))
 
     # Main loop
     clock = pg.time.Clock()
@@ -87,11 +74,8 @@ def main():
         # All drawing code happens after the for loop
         #
 
-        screen.blit(screen_bg, (0, 0))
-
-        screen_shadow.fill(BLACK)
-        player.light.draw(screen_shadow)
-        screen.blit(screen_shadow, (0, 0))
+        # Fill the screen with the default background color
+        screen.fill(BLACK)
 
         keystate = pg.key.get_pressed()
         direction_x = keystate[pg.K_d] - keystate[pg.K_a]
@@ -101,12 +85,19 @@ def main():
         # Sprite groups have an update() method,
         # which simply calls the update method for
         # all the sprites it contains
-        allsprites.update()
+        player_sprites.update()
+        world_sprites.update()
 
         # Draw all sprites
-        allsprites.draw(screen)
+        world_sprites.draw(screen)
+
+        screen_shadow.fill(BLACK)
+        player.light.draw(screen_shadow)
+        screen.blit(screen_shadow, (0, 0))
 
         world.draw(screen)
+
+        player_sprites.draw(screen)
 
         # Go ahead and update the screen with what we've drawn.
         # This MUST happen after all the other drawing commands.
