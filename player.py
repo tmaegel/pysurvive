@@ -13,6 +13,8 @@ from flashlight import Flashlight
 class Player(pg.sprite.Sprite):
 
     speed = 4
+    collision = False
+
     image_index = 0
     movement_index = 0
     movement_states = [
@@ -59,6 +61,7 @@ class Player(pg.sprite.Sprite):
 
         self.image = self.movement_images[self.movement_index][
             self.image_index]
+        self.mask = pg.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         # Virtual position the image at the center of the screen
         # The position of image/rect used for drawing only
@@ -76,23 +79,37 @@ class Player(pg.sprite.Sprite):
         # The initial coordinates are used for drawing only.
         self.light = Flashlight(self, self.get_real_x(), self.get_real_y())
 
-    def move(self, screen, direction):
+    def update(self, _direction):
         """
-        Move the player in the specific direction.
+        Update the player object.
+        This is the crank to all other function calls.
         """
-        # self.rect.move_ip(*[d * self.speed for d in direction])
-        self.game.set_offset(-1 * direction[0] * self.speed,
-                             -1 * direction[1] * self.speed)
 
-        # Add the negate value of dx and dy to the player position
-        self.x = self.x - self.game.dx
-        self.y = self.y - self.game.dy
+        # Check for collision before
+        self.collide()
 
+        # Allow moving only if there is no collision detected
+        if not self.collision:
+            self.move(_direction, self.speed)
+
+        # Rotate the iamge
         self.rotate(self.get_angle())
-        self.animate(direction)
+
+        # Handle the different sprites for animation here
+        self.animate(_direction)
 
         # Update flashlight of player
         self.light.update(self.get_real_x(), self.get_real_y())
+
+    def move(self, _direction, _speed):
+        """
+        Move the player in the specific direction.
+        """
+        self.game.set_offset(-1 * _direction[0] * _speed,
+                             -1 * _direction[1] * _speed)
+        # Add the negate value of dx and dy to the player position
+        self.x = self.x - self.game.dx
+        self.y = self.y - self.game.dy
 
     def rotate(self, _angle):
         """
@@ -105,6 +122,8 @@ class Player(pg.sprite.Sprite):
         self.image = pg.transform.rotate(
             self.movement_images[self.movement_index][self.image_index],
             (-1 * _angle * (180 / math.pi)))
+        # Recreating mask after every rotation
+        self.mask = pg.mask.from_surface(self.image)
         # Keep the image on the same position.
         # Save its current center.
         x, y = self.rect.center
@@ -128,6 +147,35 @@ class Player(pg.sprite.Sprite):
         else:
             self.image_index = 0
         # self.feets.move(direction)
+
+    def collide(self):
+        """
+        First check a simple collisions detection (collide rect).
+        Then check for a specific collision (mask) for a better collisions.
+        """
+
+        # @todo: wall_sprites should collide_sprites later
+        wall_hit_list = pg.sprite.spritecollide(
+            self, self.game.wall_sprites, False,
+            collided=pg.sprite.collide_rect)
+        for wall in wall_hit_list:
+            # Make better check here and handle the collision.
+            point = pg.sprite.collide_mask(self, wall)
+            if point is not None:
+                self.collision = True
+                if self.get_real_x() < wall.x:
+                    self.move([-1, 0], self.speed * 2)
+                elif self.get_real_x() > wall.x + wall.width:
+                    self.move([1, 0], self.speed * 2)
+                elif self.get_real_y() < wall.y:
+                    self.move([0, -1], self.speed * 2)
+                elif self.get_real_y() > wall.y + wall.height:
+                    self.move([0, 1], self.speed * 2)
+
+                return
+
+        # Set collision to False if no collision is detected
+        self.collision = False
 
     def get_angle(self):
         """

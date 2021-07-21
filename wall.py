@@ -19,6 +19,8 @@ class Wall(pg.sprite.Sprite):
 
         self.image = pg.Surface([self.width, self.height])
         self.image.fill(GRAY)
+        self.mask = pg.mask.from_surface(self.image)
+        self.mask.fill()
         self.rect = self.image.get_rect()
 
         # Set position for drawing only

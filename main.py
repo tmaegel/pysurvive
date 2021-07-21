@@ -50,8 +50,8 @@ class Game():
         #
 
         self.rooms = (
-            Room(self, 100, 100, 800, 600, 'textures/stone_floor1.png'),
-            Room(self, -300, -100, 400, 600, 'textures/stone_floor2.png')
+            Room(self, 100, 100, 800, 600, 'textures/brick/ground_01.png'),
+            Room(self, -300, -100, 400, 600, 'textures/brick/ground_01.png')
         )
 
         self.wall_width = 25
@@ -121,26 +121,25 @@ class Game():
                 elif event.type == MOUSEBUTTONUP:
                     pass
 
-            #
-            # All drawing code happens after the for loop
-            #
+            keystate = pg.key.get_pressed()
+            direction_x = keystate[pg.K_d] - keystate[pg.K_a]
+            direction_y = keystate[pg.K_s] - keystate[pg.K_w]
 
             # Fill the screen with the default background color
             self.screen.fill(BLACK)
 
-            keystate = pg.key.get_pressed()
-            direction_x = keystate[pg.K_d] - keystate[pg.K_a]
-            direction_y = keystate[pg.K_s] - keystate[pg.K_w]
-            self.player.move(self.screen, [direction_x, direction_y])
+            #
+            # Updating
+            #
 
-            # Sprite groups have an update() method,
-            # which simply calls the update method for
-            # all the sprites it contains
-            self.player_sprites.update()
+            self.player_sprites.update([direction_x, direction_y])
             self.room_sprites.update()
             self.wall_sprites.update()
 
-            # Draw all sprites
+            #
+            # Drawing
+            #
+
             self.room_sprites.draw(self.screen)
 
             self.screen_shadow.fill(BLACK)
@@ -148,7 +147,6 @@ class Game():
             self.screen.blit(self.screen_shadow, (0, 0))
 
             self.wall_sprites.draw(self.screen)
-
             self.player_sprites.draw(self.screen)
 
             # Go ahead and update the screen with what we've drawn.
