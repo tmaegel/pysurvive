@@ -33,5 +33,5 @@ class Room(pg.sprite.Sprite):
 
     def update(self):
         # Update x, y position of the rect for drawing only
-        self.rect.x += self.game.dx
-        self.rect.y += self.game.dy
+        self.rect.x = round(self.rect.x + self.game.dx)
+        self.rect.y = round(self.rect.y + self.game.dy)

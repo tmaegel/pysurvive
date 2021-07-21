@@ -42,8 +42,8 @@ class Game():
         self.x = 0
         self.y = 0
         # Offset x, y for objects the game world
-        self.dx = 0
-        self.dy = 0
+        self.dx = 0.0
+        self.dy = 0.0
 
         #
         # Prepare game objects
@@ -158,8 +158,8 @@ class Game():
     def set_offset(self, _dx, _dy):
         self.dx = _dx
         self.dy = _dy
-        self.x += _dx
-        self.y += _dy
+        self.x = round(self.x + _dx)
+        self.y = round(self.y + _dy)
 
     def get_offset(self):
         return (self.x, self.y)

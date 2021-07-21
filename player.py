@@ -12,8 +12,7 @@ from flashlight import Flashlight
 
 class Player(pg.sprite.Sprite):
 
-    speed = 4
-    collision = False
+    speed = 6
 
     image_index = 0
     movement_index = 0
@@ -86,14 +85,13 @@ class Player(pg.sprite.Sprite):
         """
 
         # Check for collision before
-        self.collide()
-
         # Allow moving only if there is no collision detected
-        if not self.collision:
+        if not self.collide_by_move(_direction, self.speed):
             self.move(_direction, self.speed)
 
         # Rotate the iamge
-        self.rotate(self.get_angle())
+        if not self.collide_by_rotation(self.get_angle()):
+            self.rotate(self.get_angle())
 
         # Handle the different sprites for animation here
         self.animate(_direction)
@@ -105,11 +103,24 @@ class Player(pg.sprite.Sprite):
         """
         Move the player in the specific direction.
         """
-        self.game.set_offset(-1 * _direction[0] * _speed,
-                             -1 * _direction[1] * _speed)
+
+        _dx, _dy = self._get_move_vector(_direction, _speed)
+        self.game.set_offset(_dx, _dy)
+
         # Add the negate value of dx and dy to the player position
-        self.x = self.x - self.game.dx
-        self.y = self.y - self.game.dy
+        self.x = round(self.x - self.game.dx)
+        self.y = round(self.y - self.game.dy)
+
+    def _get_move_vector(self, _direction, _speed):
+        # If the player moves diagonal add only the
+        # half of the speed in each direction.
+        if _direction[0] != 0 and _direction[1] != 0:
+            # Based on the 45° angle
+            return (-1 * _direction[0] * abs(math.cos(math.pi/4)) * _speed,
+                    -1 * _direction[1] * abs(math.sin(math.pi/4)) * _speed)
+        else:
+            return (-1 * _direction[0] * _speed,
+                    -1 * _direction[1] * _speed)
 
     def rotate(self, _angle):
         """
@@ -148,34 +159,80 @@ class Player(pg.sprite.Sprite):
             self.image_index = 0
         # self.feets.move(direction)
 
-    def collide(self):
+    def collide_by_move(self, _direction, _speed):
         """
         First check a simple collisions detection (collide rect).
         Then check for a specific collision (mask) for a better collisions.
         """
 
+        # Stop the movement for collision checks
+        self.game.set_offset(0, 0)
+
+        # Backup the position of player
+        player_rect_x = self.get_virt_x()
+        player_rect_y = self.get_virt_y()
+
+        # Get the currect movement vector to simulate the movement
+        _dx, _dy = self._get_move_vector(_direction, _speed)
+
+        # Simulate the movement by move the rect object
+        self.rect.centerx = round(self.rect.centerx - _dx)
+        self.rect.centery = round(self.rect.centery - _dy)
+
+        collision = False
+        for wall in self._collide_by_rect():
+            # Make better check here and handle the collision.
+            point = pg.sprite.collide_mask(self, wall)
+            if point is not None:
+                collision = True
+                break
+
+        # Reset the simulated changes of player
+        self.rect.centerx = player_rect_x
+        self.rect.centery = player_rect_y
+
+        return collision
+
+    def collide_by_rotation(self, _angle):
+
+        # Backup the player image/mask
+        player_image = self.image
+        player_mask = self.mask
+
+        def reset():
+            self.image = player_image
+            self.mask = player_mask
+            # Keep the image on the same position.
+            # Save its current center.
+            x, y = self.rect.center
+            # Replace old rect with new rect.
+            self.rect = self.image.get_rect()
+            # Put the new rect's center at old center.
+            self.rect.center = (x, y)
+
+        # Simulate the rotation of the player
+        self.rotate(_angle)
+
+        collision = False
+        for wall in self._collide_by_rect():
+            # Make better check here and handle the collision.
+            point = pg.sprite.collide_mask(self, wall)
+            if point is not None:
+                collision = True
+                break
+
+        # Reset the simulated changes of player
+        reset()
+
+        return collision
+
+    def _collide_by_rect(self):
         # @todo: wall_sprites should collide_sprites later
         wall_hit_list = pg.sprite.spritecollide(
             self, self.game.wall_sprites, False,
             collided=pg.sprite.collide_rect)
-        for wall in wall_hit_list:
-            # Make better check here and handle the collision.
-            point = pg.sprite.collide_mask(self, wall)
-            if point is not None:
-                self.collision = True
-                if self.get_real_x() < wall.x:
-                    self.move([-1, 0], self.speed * 2)
-                elif self.get_real_x() > wall.x + wall.width:
-                    self.move([1, 0], self.speed * 2)
-                elif self.get_real_y() < wall.y:
-                    self.move([0, -1], self.speed * 2)
-                elif self.get_real_y() > wall.y + wall.height:
-                    self.move([0, 1], self.speed * 2)
 
-                return
-
-        # Set collision to False if no collision is detected
-        self.collision = False
+        return wall_hit_list
 
     def get_angle(self):
         """
