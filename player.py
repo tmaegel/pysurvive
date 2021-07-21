@@ -51,8 +51,8 @@ class Player(pg.sprite.Sprite):
                     image, _ = load_image(path + img, alpha=True, path=False)
                     images_orig.append(image)
                     images.append(pg.transform.scale(
-                        image, (image.get_rect().width//2,
-                                image.get_rect().height//2)))
+                        image, (image.get_rect().width//3,
+                                image.get_rect().height//3)))
                 self.movement_images_orig.append(images_orig)
                 self.movement_images.append(images)
             else:
@@ -227,9 +227,8 @@ class Player(pg.sprite.Sprite):
         return collision
 
     def _collide_by_rect(self):
-        # @todo: wall_sprites should collide_sprites later
         wall_hit_list = pg.sprite.spritecollide(
-            self, self.game.wall_sprites, False,
+            self, self.game.wall_render_sprites, False,
             collided=pg.sprite.collide_rect)
 
         return wall_hit_list

@@ -35,12 +35,13 @@ class Game():
         # Prepare the shadow surface / screeb
         self.screen_shadow = pg.Surface(self.screen.get_size())
         self.screen_shadow = self.screen_shadow.convert()
-        self.screen_shadow.set_alpha(245)
+        self.screen_shadow.set_alpha(240)
         self.screen_shadow.set_colorkey(COLORKEY)
 
         # Absolute position of the game world
         self.x = 0
         self.y = 0
+
         # Offset x, y for objects the game world
         self.dx = 0.0
         self.dy = 0.0
@@ -49,51 +50,35 @@ class Game():
         # Prepare game objects
         #
 
-        self.rooms = (
-            Room(self, 100, 100, 800, 600, 'textures/brick/ground_01.png'),
-            Room(self, -300, -100, 400, 600, 'textures/brick/ground_01.png')
-        )
-
-        self.wall_width = 25
-        self.walls = (
-            # Room 1
-            Wall(self, 100, 100, 800, self.wall_width),
-            Wall(self, 100 + 800 - self.wall_width, 100 + \
-                 self.wall_width, self.wall_width, 600 - self.wall_width * 2),
-            Wall(self, 100, 100 + 600 - self.wall_width,
-                 800, self.wall_width),
-            Wall(self, 100, 100 + self.wall_width,
-                 self.wall_width, 100 - self.wall_width),
-            Wall(self, 100, 350, self.wall_width, 350 - self.wall_width),
-            Wall(self, 400 - self.wall_width//2, 250, self.wall_width, 300),
-            # Room 2
-            Wall(self, -300, -100, 400, self.wall_width),
-            Wall(self, -300 + 400 - self.wall_width, -100, self.wall_width,
-                 300),
-            Wall(self, -300, -100 + 600 - self.wall_width, 400,
-                 self.wall_width),
-            Wall(self, -300, -100, self.wall_width, 600),
-        )
-
-        # Get all unique points (corners) of wall segments.
-        # Prevent duplication of x, y coordinates.
-        self.unique_wall_points = []
-        for wall in self.walls:
-            for wall_point in wall.get_wall_points():
-                point = (wall_point[0], wall_point[1])
-                if point not in self.unique_wall_points:
-                    self.unique_wall_points.append(point)
+        self.screen_sprite = Screen(SCREEN_RECT.size)
 
         # A sprite group that contains all room sprites
-        self.room_sprites = pg.sprite.RenderPlain(self.rooms)
+        self.room_sprites = pg.sprite.RenderPlain(
+            Room(self, 100, 100, 800, 600, ('left', 'right')),
+            Room(self, -385, -100, 500, 1000, ('bottom', 'right')),
+            Room(self, -385, 885, 500, 250, ('top')),
+            Room(self, 885, 200, 600, 400, ('left')),
+        )
         # A sprite group that contains all wall sprites
-        self.wall_sprites = pg.sprite.RenderPlain(self.walls)
+        self.wall_sprites = pg.sprite.RenderPlain(
+            ((wall for wall in room.walls)
+             for room in self.room_sprites.sprites())
+        )
         # A sprite group that contains all close room sprites (render only)
         self.room_render_sprites = pg.sprite.RenderPlain()
         # A sprite group that contains all close wall sprites (render only)
         self.wall_render_sprites = pg.sprite.RenderPlain()
         # A sprite group that contains all close sprites (collision only)
         self.collide_sprites = pg.sprite.RenderPlain()
+
+        # Get all unique points (corners) of wall segments.
+        # Prevent duplication of x, y coordinates.
+        self.unique_wall_points = []
+        for wall in self.wall_sprites.sprites():
+            for wall_point in wall.get_wall_points():
+                point = (wall_point[0], wall_point[1])
+                if point not in self.unique_wall_points:
+                    self.unique_wall_points.append(point)
 
         # Player
         self.player = Player(self)
@@ -129,10 +114,26 @@ class Game():
             self.screen.fill(BLACK)
 
             #
+            # Refactor the render sprites group
+            #
+
+            # Remove all sprites of the previous loop
+            self.wall_render_sprites.empty()
+            self.room_render_sprites.empty()
+            # Find the new sprites
+            self.wall_render_sprites.add(pg.sprite.spritecollide(
+                self.screen_sprite, self.wall_sprites, False,
+                collided=pg.sprite.collide_rect))
+            self.room_render_sprites.add(pg.sprite.spritecollide(
+                self.screen_sprite, self.room_sprites, False,
+                collided=pg.sprite.collide_rect))
+
+            #
             # Updating
             #
 
             self.player_sprites.update([direction_x, direction_y])
+            # @todo: Update not all objects later
             self.room_sprites.update()
             self.wall_sprites.update()
 
@@ -140,13 +141,14 @@ class Game():
             # Drawing
             #
 
-            self.room_sprites.draw(self.screen)
+            self.room_render_sprites.draw(self.screen)
 
+            # @todo: Do not use alle wall objects to render/calculate the shadow
             self.screen_shadow.fill(BLACK)
             self.player.light.draw(self.screen_shadow)
             self.screen.blit(self.screen_shadow, (0, 0))
 
-            self.wall_sprites.draw(self.screen)
+            self.wall_render_sprites.draw(self.screen)
             self.player_sprites.draw(self.screen)
 
             # Go ahead and update the screen with what we've drawn.
@@ -163,6 +165,22 @@ class Game():
 
     def get_offset(self):
         return (self.x, self.y)
+
+
+class Screen(pg.sprite.Sprite):
+
+    """
+    Simple screen class to detect wheather objects
+    are visible on the screen.
+    """
+
+    def __init__(self, _size):
+        pg.sprite.Sprite.__init__(self)
+
+        self.image = pg.Surface(_size)
+        self.rect = self.image.get_rect()
+        self.rect.x = 0
+        self.rect.y = 0
 
 
 if __name__ == '__main__':

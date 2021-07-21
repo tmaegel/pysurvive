@@ -1,13 +1,9 @@
 import pygame as pg
 
-from config import (
-    GRAY
-)
-
 
 class Wall(pg.sprite.Sprite):
 
-    def __init__(self, _game, _x, _y, _width, _height):
+    def __init__(self, _game, _x, _y, _width, _height, _color):
         pg.sprite.Sprite.__init__(self)
 
         self.game = _game
@@ -18,7 +14,7 @@ class Wall(pg.sprite.Sprite):
         self.height = _height
 
         self.image = pg.Surface([self.width, self.height])
-        self.image.fill(GRAY)
+        self.image.fill(_color)
         self.mask = pg.mask.from_surface(self.image)
         self.mask.fill()
         self.rect = self.image.get_rect()

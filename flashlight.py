@@ -39,7 +39,7 @@ class Flashlight():
         :rtype: Dict
         """
         result_intersect = None
-        for wall in self.player.game.walls:
+        for wall in self.player.game.wall_sprites.sprites():
             for segment in wall.wall_segments:
                 intersect = self._calc_intersection(ray, segment)
                 if not intersect:
