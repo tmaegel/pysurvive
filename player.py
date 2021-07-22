@@ -15,7 +15,7 @@ from flashlight import Flashlight
 
 class Player(pg.sprite.Sprite):
 
-    speed = 6
+    speed = 4
 
     image_index = 0
     # Contains the original images
@@ -87,8 +87,8 @@ class Player(pg.sprite.Sprite):
         self.rect.center = (SCREEN_RECT.width//2, SCREEN_RECT.height//2)
 
         # Real position of the player in the game world
-        self.x = self.rect.centerx
-        self.y = self.rect.centery
+        self.x = self.get_virt_x()
+        self.y = self.get_virt_y()
 
         # Reference to the game object
         self.game = _game
@@ -96,7 +96,7 @@ class Player(pg.sprite.Sprite):
         self.feets = PlayerFeet(self)
         # Initialize the light (flashlight) with x and y from player
         # The initial coordinates are used for drawing only.
-        self.light = Flashlight(self, self.get_real_x(), self.get_real_y())
+        self.light = Flashlight(self, self.get_x(), self.get_y())
 
     def update(self, _direction):
         """
@@ -117,7 +117,7 @@ class Player(pg.sprite.Sprite):
         self.animate(_direction)
 
         # Update flashlight of player
-        self.light.update(self.get_real_x(), self.get_real_y())
+        self.light.update(self.get_x(), self.get_y())
 
     def shot(self):
         # Set shot movement
@@ -125,11 +125,12 @@ class Player(pg.sprite.Sprite):
         self.image_index = 0
         self.movement_index = 3
         self.sound_shot.play()
+
         # Create bullet object
-        self.bullet = Bullet(
-            self.get_real_x(), self.get_real_y(), self.get_angle())
+        self.bullet = Bullet(self.get_weapon_x(),
+                             self.get_weapon_y(), self.get_weapon_angle())
         self.bullet.intersect = self.bullet.get_intersection(
-            self.game.wall_sprites.sprites())
+            self.game.block_sprites.sprites())
 
     def reload(self):
         # Set reload movement
@@ -266,9 +267,9 @@ class Player(pg.sprite.Sprite):
         self.rect.centery = round(self.rect.centery - _dy)
 
         collision = False
-        for wall in self._collide_by_rect():
+        for block in self._collide_by_rect():
             # Make better check here and handle the collision.
-            point = pg.sprite.collide_mask(self, wall)
+            point = pg.sprite.collide_mask(self, block)
             if point is not None:
                 collision = True
                 break
@@ -300,9 +301,9 @@ class Player(pg.sprite.Sprite):
         self.rotate(_angle)
 
         collision = False
-        for wall in self._collide_by_rect():
+        for block in self._collide_by_rect():
             # Make better check here and handle the collision.
-            point = pg.sprite.collide_mask(self, wall)
+            point = pg.sprite.collide_mask(self, block)
             if point is not None:
                 collision = True
                 break
@@ -313,40 +314,103 @@ class Player(pg.sprite.Sprite):
         return collision
 
     def _collide_by_rect(self):
-        wall_hit_list = pg.sprite.spritecollide(
-            self, self.game.wall_render_sprites, False,
+        block_hit_list = pg.sprite.spritecollide(
+            self, self.game.block_render_sprites, False,
             collided=pg.sprite.collide_rect)
 
-        return wall_hit_list
+        return block_hit_list
 
-    def get_angle(self):
+    def get_x(self):
         """
-        Calculate the angle of the view based in the mouse position
+        Get the real x coordinate of the player in the game world.
         """
-        angle = (math.atan2(
-            self.get_aim_y() - self.get_virt_y(),
-            self.get_aim_x() - self.get_virt_x())
-            + 2 * math.pi) % (2 * math.pi)
-
-        return angle
-
-    def get_real_x(self):
         return self.x
 
-    def get_real_y(self):
+    def get_y(self):
+        """
+        Get the real y coordinate of the player in the game world.
+        """
         return self.y
 
     def get_virt_x(self):
+        """
+        Get the virtual x coordinate of the player on the screen.
+        """
         return self.rect.centerx
 
     def get_virt_y(self):
+        """
+        Get the virtual y coordinate of the player on the screen.
+        """
         return self.rect.centery
 
     def get_aim_x(self):
+        """
+        Get the x coordinate of the mouse cursor.
+        """
         return pg.mouse.get_pos()[0]
 
     def get_aim_y(self):
+        """
+        Get the y coordinate of the mouse cursor.
+        """
         return pg.mouse.get_pos()[1]
+
+    def get_angle(self):
+        """
+        Get the angle of the player position on the screen
+        and the mouse cursor.
+        """
+        return (math.atan2(
+            self.get_aim_y() - (self.get_virt_y()),
+            self.get_aim_x() - (self.get_virt_x())
+            + 2 * math.pi) % (2 * math.pi))
+
+    def get_weapon_angle(self):
+        """
+        Get the angle of the weapon position on the screen
+        and the mouse cursor.
+        """
+        return (math.atan2(
+            self.get_aim_y() - (self.get_virt_weapon_y()),
+            self.get_aim_x() - (self.get_virt_weapon_x())
+            + 2 * math.pi) % (2 * math.pi))
+
+    def get_weapon_x(self, _offset1=19, _offset2=40):
+        """
+        Get the real x coordinate of the weapon in the game world.
+        """
+        _angle = self.get_angle()
+        return round(self.get_x()
+                     - math.cos(_angle - math.pi/2) * _offset1
+                     + math.cos(_angle) * _offset2)
+
+    def get_weapon_y(self, _offset1=19, _offset2=40):
+        """
+        Get the real y coordinate of the weapon in the game world.
+        """
+        _angle = self.get_angle()
+        return round(self.get_y()
+                     - math.sin(_angle - math.pi/2) * _offset1
+                     + math.sin(_angle) * _offset2)
+
+    def get_virt_weapon_x(self, _offset1=19, _offset2=40):
+        """
+        Get the virtual x coordinate of weapon on the screen.
+        """
+        _angle = self.get_angle()
+        return round(self.get_virt_x()
+                     - math.cos(_angle - math.pi/2) * _offset1
+                     + math.cos(_angle) * _offset2)
+
+    def get_virt_weapon_y(self, _offset1=19, _offset2=40):
+        """
+        Get the virtual y coordinate of weapon on the screen.
+        """
+        _angle = self.get_angle()
+        return round(self.get_virt_y()
+                     - math.sin(_angle - math.pi/2) * _offset1
+                     + math.sin(_angle) * _offset2)
 
 
 class PlayerFeet(pg.sprite.Sprite):
@@ -463,27 +527,14 @@ class PlayerFeet(pg.sprite.Sprite):
 
 class Bullet(Ray):
 
-    speed = 5
-    size = 50
-
     # Draw the impact position if true.
     # Otherwise draw the trail of the bullet.
     impact = False
 
+    trail_offset = 25
+
     def __init__(self, _x, _y, _angle):
         Ray.__init__(self, _x, _y, _angle)
-        # x, y start coordinates of the bullet (for movement).
-        self.x1 = _x
-        self.y1 = _y
-        # x, y end coordinates of the bullet (for movement).
-        self.x2 = self.x1 + math.cos(self.angle) * self.size
-        self.y2 = self.y1 + math.sin(self.angle) * self.size
-
-    # def update(self):
-    #     self.x1 = self.x1 + math.cos(self.angle) * self.size * self.speed
-    #     self.y1 = self.y1 + math.sin(self.angle) * self.size * self.speed
-    #     self.x2 = self.x2 + math.cos(self.angle) * self.size * self.speed
-    #     self.y2 = self.y2 + math.sin(self.angle) * self.size * self.speed
 
     def draw(self, screen, _offset):
         """
@@ -499,7 +550,10 @@ class Bullet(Ray):
             else:
                 # Draw the trail of the bullet
                 pg.draw.line(screen, GRAY_LIGHT,
-                             (self.x0 + _offset[0], self.y0 + _offset[1]),
+                             (self.x0 + _offset[0] + math.cos(self.angle)
+                              * self.trail_offset,
+                              self.y0 + _offset[1] + math.sin(self.angle)
+                              * self.trail_offset),
                              (self.intersect['x'] + _offset[0],
                               self.intersect['y'] + _offset[1]))
                 self.impact = True
