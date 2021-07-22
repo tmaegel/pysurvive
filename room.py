@@ -1,7 +1,7 @@
 import pygame as pg
 
+from class_toolchain import Block
 from utils import load_image
-from wall import Wall
 
 
 class Room(pg.sprite.Sprite):
@@ -96,13 +96,15 @@ class Room(pg.sprite.Sprite):
                                    self.x,
                                    self.y + self.wall_size,
                                    self.wall_size,
-                                   self.height//2 - self.wall_size - self.door_size//2,
+                                   self.height//2 - self.wall_size
+                                   - self.door_size//2,
                                    self.wall_color))
             self.walls.append(Wall(self.game,
                                    self.x,
                                    self.y + self.height//2 + self.door_size//2,
                                    self.wall_size,
-                                   self.height//2 - self.wall_size - self.door_size//2,
+                                   self.height//2 - self.wall_size
+                                   - self.door_size//2,
                                    self.wall_color))
         # 4: Door on the right
         if 'right' not in self.door:
@@ -117,16 +119,38 @@ class Room(pg.sprite.Sprite):
                                    self.x + self.width - self.wall_size,
                                    self.y + self.wall_size,
                                    self.wall_size,
-                                   self.height//2 - self.wall_size - self.door_size//2,
+                                   self.height//2 - self.wall_size
+                                   - self.door_size//2,
                                    self.wall_color))
             self.walls.append(Wall(self.game,
                                    self.x + self.width - self.wall_size,
                                    self.y + self.height//2 + self.door_size//2,
                                    self.wall_size,
-                                   self.height//2 - self.wall_size - self.door_size//2,
+                                   self.height//2 - self.wall_size
+                                   - self.door_size//2,
                                    self.wall_color))
 
     def update(self):
         # Update x, y position of the rect for drawing only
         self.rect.x = round(self.rect.x + self.game.dx)
         self.rect.y = round(self.rect.y + self.game.dy)
+
+
+class Wall(Block):
+
+    def __init__(self, _game, _x, _y, _width, _height, _color):
+        Block.__init__(self, _game, _x, _y, _width, _height)
+        self.image.fill(_color)
+
+
+class Box(Block):
+
+    texture_path = 'objects/block/box_01.png'
+
+    def __init__(self, _game, _x, _y, _size):
+        Block.__init__(self, _game, _x, _y, _size, _size)
+
+        self.texture_orig, _ = load_image(self.texture_path)
+        self.texture = pg.transform.scale(
+            self.texture_orig, (self.width, self.height))
+        self.image.blit(self.texture, (0, 0))

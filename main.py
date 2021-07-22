@@ -1,4 +1,3 @@
-import math
 import pygame as pg
 from pygame.locals import (
     QUIT,
@@ -13,9 +12,8 @@ from config import (
     COLORKEY,
     BLACK,
     SCREEN_RECT,
-    RED,
 )
-from room import Room
+from room import Room, Box
 from player import Player
 
 
@@ -61,25 +59,26 @@ class Game():
             Room(self, 885, 200, 600, 400, ('left')),
         )
         # A sprite group that contains all wall sprites
-        self.wall_sprites = pg.sprite.RenderPlain(
+        self.block_sprites = pg.sprite.RenderPlain(
             ((wall for wall in room.walls)
-             for room in self.room_sprites.sprites())
+             for room in self.room_sprites.sprites()),
+            Box(self, 300, 300, 75)
         )
         # A sprite group that contains all close room sprites (render only)
         self.room_render_sprites = pg.sprite.RenderPlain()
-        # A sprite group that contains all close wall sprites (render only)
-        self.wall_render_sprites = pg.sprite.RenderPlain()
+        # A sprite group that contains all close block sprites (render only)
+        self.block_render_sprites = pg.sprite.RenderPlain()
         # A sprite group that contains all close sprites (collision only)
         self.collide_sprites = pg.sprite.RenderPlain()
 
-        # Get all unique points (corners) of wall segments.
+        # Get all unique points (corners) of block segments.
         # Prevent duplication of x, y coordinates.
-        self.unique_wall_points = []
-        for wall in self.wall_sprites.sprites():
-            for wall_point in wall.get_wall_points():
-                point = (wall_point[0], wall_point[1])
-                if point not in self.unique_wall_points:
-                    self.unique_wall_points.append(point)
+        self.unique_block_points = []
+        for block in self.block_sprites.sprites():
+            for block_point in block.get_points():
+                point = (block_point[0], block_point[1])
+                if point not in self.unique_block_points:
+                    self.unique_block_points.append(point)
 
         # Player
         self.player = Player(self)
@@ -123,11 +122,11 @@ class Game():
             #
 
             # Remove all sprites of the previous loop
-            self.wall_render_sprites.empty()
+            self.block_render_sprites.empty()
             self.room_render_sprites.empty()
             # Find the new sprites
-            self.wall_render_sprites.add(pg.sprite.spritecollide(
-                self.screen_sprite, self.wall_sprites, False,
+            self.block_render_sprites.add(pg.sprite.spritecollide(
+                self.screen_sprite, self.block_sprites, False,
                 collided=pg.sprite.collide_rect))
             self.room_render_sprites.add(pg.sprite.spritecollide(
                 self.screen_sprite, self.room_sprites, False,
@@ -140,7 +139,7 @@ class Game():
             self.player_sprites.update([direction_x, direction_y])
             # @todo: Update not all objects later
             self.room_sprites.update()
-            self.wall_sprites.update()
+            self.block_sprites.update()
 
             #
             # Drawing
@@ -153,10 +152,14 @@ class Game():
             self.player.light.draw(self.screen_shadow)
             self.screen.blit(self.screen_shadow, (0, 0))
 
-            self.wall_render_sprites.draw(self.screen)
+            self.block_render_sprites.draw(self.screen)
             if self.player.bullet:
                 self.player.bullet.draw(self.screen, self.get_offset())
             self.player_sprites.draw(self.screen)
+
+            # pg.draw.line(self.screen, (0, 255, 0),
+            #              (self.player.get_virt_x(), self.player.get_virt_y()),
+            #              (self.player.get_aim_x(), self.player.get_aim_y()))
 
             # Go ahead and update the screen with what we've drawn.
             # This MUST happen after all the other drawing commands.

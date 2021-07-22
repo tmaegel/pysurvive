@@ -31,7 +31,7 @@ class Flashlight():
 
     def _get_sight_rays(self, _x0, _y0):
         """
-        Returns a list with all rays towards to the unique wall points
+        Returns a list with all rays towards to the unique block points
         and within the player vision range based on x0 and y0.
 
         :return rays: List of rays
@@ -42,10 +42,10 @@ class Flashlight():
 
         # For each (unique) line segment end point cast a ray directly towards
         # plus two more rays offset by +/- 0.00001 radians. The two extra rays
-        # are needed to hit the wall(s) behind any given segment corner.
+        # are needed to hit the wall/block(s) behind any given segment corner.
         # unique_angles = [ray1.angle, ray2.angle]
         unique_angles = []
-        for point in self.player.game.unique_wall_points:
+        for point in self.player.game.unique_block_points:
             # point = (point[0], point[1])
             # Build the triangle from x0, y0 (player position) and both
             # farthest intersections with the walls.
@@ -62,11 +62,11 @@ class Flashlight():
             unique_angles.append(angle+0.00001)
 
         # With the resulting angles we can now calculate the intersection
-        # between wall and ray.
+        # between block and ray.
         for angle in unique_angles:
             ray = LightRay(_x0, _y0, angle)
             ray.intersect = ray.get_intersection(
-                self.player.game.wall_sprites.sprites())
+                self.player.game.block_sprites.sprites())
             if ray.intersect:
                 rays.append(ray)
 

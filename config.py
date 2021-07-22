@@ -5,7 +5,7 @@ IMAGE_DIR = ASSETS_DIR + 'img/'
 SOUND_DIR = ASSETS_DIR + 'sound/'
 SCREEN_RECT = pg.Rect(0, 0, 1024, 768)
 
-FPS = 30  # frame per seconds
+FPS = 60  # frame per seconds
 
 # Define the colors we will use in RGB format
 COLORKEY = (255, 0, 255)

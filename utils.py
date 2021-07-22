@@ -9,8 +9,8 @@ from config import (
 
 
 def load_image(name, alpha=False, colorkey=None, path=True):
-    # create a full pathname to the file
     if path:
+        # create a full pathname to the file
         fullname = os.path.join(IMAGE_DIR, name)
     else:
         fullname = name
@@ -33,15 +33,18 @@ def load_image(name, alpha=False, colorkey=None, path=True):
     return image, image.get_rect()
 
 
-def load_sound(name):
+def load_sound(name, path=True):
     class NoneSound:
         def play(self): pass
 
     if not pg.mixer:
         return NoneSound()
 
-    # create a full pathname to the file
-    fullname = os.path.join(SOUND_DIR, name)
+    if path:
+        # create a full pathname to the file
+        fullname = os.path.join(SOUND_DIR, name)
+    else:
+        fullname = name
     try:
         sound = pg.mixer.Sound(fullname)
     except pg.error as message:
