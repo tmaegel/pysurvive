@@ -1,3 +1,4 @@
+import math
 import pygame as pg
 from pygame.locals import (
     QUIT,
@@ -12,9 +13,9 @@ from config import (
     COLORKEY,
     BLACK,
     SCREEN_RECT,
+    RED,
 )
 from room import Room
-from wall import Wall
 from player import Player
 
 
@@ -84,12 +85,13 @@ class Game():
         self.player = Player(self)
         # A sprite group that contains all player sprites
         self.player_sprites = pg.sprite.RenderPlain(
-            (self.player,))
+            (self.player.feets, self.player))
 
     def start(self):
         """
         This function is called when the program starts.
-        it initializes everything it needs, then runs in
+
+        It initializes everything it needs, then runs in
         a loop until the function returns.
         """
 
@@ -102,7 +104,10 @@ class Game():
                 elif event.type == KEYDOWN and event.key == K_ESCAPE:
                     self.running = False
                 elif event.type == MOUSEBUTTONDOWN:
-                    pass
+                    if event.button == 1:
+                        self.player.shot()
+                    elif event.button == 3:
+                        self.player.reload()
                 elif event.type == MOUSEBUTTONUP:
                     pass
 
@@ -149,6 +154,8 @@ class Game():
             self.screen.blit(self.screen_shadow, (0, 0))
 
             self.wall_render_sprites.draw(self.screen)
+            if self.player.bullet:
+                self.player.bullet.draw(self.screen, self.get_offset())
             self.player_sprites.draw(self.screen)
 
             # Go ahead and update the screen with what we've drawn.

@@ -2,14 +2,16 @@ import math
 import pygame as pg
 
 from config import (
-    RED_LIGHT,
     COLORKEY,
+    RED_LIGHT,
 )
+
+from class_toolchain import Ray
 
 
 class Flashlight():
 
-    light_rays = []
+    rays = []
 
     def __init__(self, _player, _x0, _y0):
         self.player = _player
@@ -23,97 +25,19 @@ class Flashlight():
         self.y0 = _y0
 
         # Update the single rays of the current view
-        self.light_rays = self._get_sight_rays(self.x0, self.y0)
-        for ray in self.light_rays:
+        self.rays = self._get_sight_rays(self.x0, self.y0)
+        for ray in self.rays:
             ray.update(self.x0, self.y0)
-
-    def _get_intersection(self, ray, closest=True):
-        """
-        Return the intersection of a specific ray and all wall segments.
-
-        :param ray: The ray object
-        :param clostest: If true returns the clostest intersect. If false
-                         returns the farthest.
-        :return: Return the x, y coordinates and a param that specified
-                 the distance.
-        :rtype: Dict
-        """
-        result_intersect = None
-        for wall in self.player.game.wall_sprites.sprites():
-            for segment in wall.wall_segments:
-                intersect = self._calc_intersection(ray, segment)
-                if not intersect:
-                    continue
-                if closest:
-                    if (not result_intersect or
-                            intersect['param'] < result_intersect['param']):
-                        result_intersect = intersect
-                else:
-                    if (not result_intersect or
-                            intersect['param'] > result_intersect['param']):
-                        result_intersect = intersect
-
-        return result_intersect
-
-    def _calc_intersection(self, ray, wall):
-        # raylight in parametric: point + direction * T1
-        ray_dx = ray.x2 - ray.x1
-        ray_dy = ray.y2 - ray.y1
-
-        # wall in parametric: point + direction * T1
-        wall_dx = wall.x2 - wall.x1
-        wall_dy = wall.y2 - wall.y1
-
-        # Check if they are. If so, no intersect
-        ray_mag = math.sqrt(ray_dx * ray_dx + ray_dy * ray_dy)
-        wall_mag = math.sqrt(wall_dx * wall_dx + wall_dy * wall_dy)
-        if (ray_dx / ray_mag == wall_dx / wall_mag and
-                ray_dy / ray_mag == wall_dy / wall_mag):
-            # Directions are the same.
-            return None
-
-        # solve for T1 and T2
-        # ray.x1 + ray_dx * T1 = wall.x1 + wall_dx * T2
-        # and
-        # ray.y1 + ray_dy * T1 = wall.y1 + wall_dy * T2
-        # ==> T1 = (wall.x1 + wall_dx * T2 - ray.x1) / ray_dx =
-        #          (wall.y1 + wall_dy * T2 - ray.y1) / ray_dy
-        # ==> wall.x1 * ray_dy + wall_dx * T2 * ray_dy - ray.x1 * ray_dy =
-        #     wall.y1 * ray_dx + wall_dy * T2 * ray_dx - ray.y1 * ray_dx
-        # ==> T2 = (ray_dx * (wall.y1 - ray.y1)
-        #           + ray_dy * (ray.x1 - wall.x1)) /
-        #          (wall_dx * ray_dy - wall_dy * ray_dx)
-        try:
-            T2 = ((ray_dx * (wall.y1 - ray.y1) +
-                   ray_dy * (ray.x1 - wall.x1)) /
-                  (wall_dx * ray_dy - wall_dy * ray_dx))
-            T1 = (wall.x1 + wall_dx * T2 - ray.x1) / ray_dx
-        except ZeroDivisionError:
-            # print("warn: division by zero")
-            return None
-
-        # Must be within parametic whatevers for ray / wall
-        if T1 < 0:
-            return None
-        if T2 < 0 or T2 > 1:
-            return None
-
-        # Return the point of intersection
-        return {
-            'x': int(ray.x1 + ray_dx * T1),
-            'y': int(ray.y1 + ray_dy * T1),
-            'param': T1
-        }
 
     def _get_sight_rays(self, _x0, _y0):
         """
         Returns a list with all rays towards to the unique wall points
         and within the player vision range based on x0 and y0.
 
-        :return light_rays: List of rays
+        :return rays: List of rays
         :rtype: List
         """
-        light_rays = []
+        rays = []
         # ray1, ray2 = self._get_edge_rays(_x0, _y0)
 
         # For each (unique) line segment end point cast a ray directly towards
@@ -138,17 +62,18 @@ class Flashlight():
             unique_angles.append(angle+0.00001)
 
         # With the resulting angles we can now calculate the intersection
-        # between wall and light ray.
+        # between wall and ray.
         for angle in unique_angles:
-            light_ray = LightRay(_x0, _y0, angle)
-            light_ray.intersect = self._get_intersection(light_ray)
-            if light_ray.intersect:
-                light_rays.append(light_ray)
+            ray = LightRay(_x0, _y0, angle)
+            ray.intersect = ray.get_intersection(
+                self.player.game.wall_sprites.sprites())
+            if ray.intersect:
+                rays.append(ray)
 
         # Sort the rays by angle
-        light_rays.sort(key=lambda x: x.angle)
+        rays.sort(key=lambda x: x.angle)
 
-        return light_rays
+        return rays
 
     # def _get_edge_rays(self, _x0, _y0):
     #     """
@@ -248,8 +173,10 @@ class Flashlight():
         #     polygon.append((self.x0, self.y0))
 
         for ray in _rays:
-            polygon.append((ray.intersect['x'] + self.player.game.get_offset()[0],
-                            ray.intersect['y'] + self.player.game.get_offset()[1]))
+            polygon.append((ray.intersect['x']
+                            + self.player.game.get_offset()[0],
+                            ray.intersect['y']
+                            + self.player.game.get_offset()[1]))
 
         return polygon
 
@@ -272,47 +199,42 @@ class Flashlight():
         #         pg.draw.polygon(screen, (c, c, c), p_shadow)
 
         # Draw the sight polygon and the view circle
-        polygon = self._get_sight_polygon(self.light_rays)
+        polygon = self._get_sight_polygon(self.rays)
         if len(polygon) > 2:
             pg.draw.polygon(screen, COLORKEY, polygon)
 
-        # for ray in self.light_rays:
+        # for ray in self.rays:
         #     ray.draw(screen,
         #              self.player.get_virt_x(),
         #              self.player.get_virt_y(),
         #              self.player.game.get_offset())
 
 
-class LightRay():
+class LightRay(Ray):
 
-    def __init__(self, _x1, _y1, _angle):
-        # Real x, y coordinates of the ray.
-        self.x1 = _y1
-        self.y1 = _y1
+    def __init__(self, _x, _y, _angle):
+        Ray.__init__(self, _x, _y, _angle)
 
-        # Convert from -pi <-> pi to 0 <-> 2pi
-        self.angle = (_angle + 2 * math.pi) % (2 * math.pi)
-        self.intersect = None
-
-        self.update(_x1, _y1)
-
-    def update(self, _x1, _y1):
-        self.x1 = _x1
-        self.y2 = _y1
-        self.x2 = self.x1 + math.cos(self.angle)
-        self.y2 = self.y1 + math.sin(self.angle)
+    def update(self, _x, _y):
+        # x, y start coordinates of the ray.
+        self.x0 = _x
+        self.y0 = _y
+        # x, y coordinates of the ray that set the direction.
+        self.x_dir = self.x0 + math.cos(self.angle)
+        self.y_dir = self.y0 + math.sin(self.angle)
 
     def draw(self, screen, _x, _y, _offset):
         """
-        Draw the individual rays.
+        Draw the individual light rays.
         The virtual x and y coordinates are passed to the player objects.
         This is necessary because of the scolling of the game world.
-        By scrolling the game world, the objects (e.g. walls) are moved
+        By scrolling the game world, the objects (e.g. segments) are moved
         virtually (only when drawing). The virtual position of the player
         is always in the center of the screen.
         In addition, an offset (x, y) of the game world is passed so that
         the intersection points with these are also moved.
         """
+
         if self.intersect:
             pg.draw.line(screen, RED_LIGHT,
                          (_x, _y),
