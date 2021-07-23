@@ -11,6 +11,7 @@ from config import (
     FPS,
     COLORKEY,
     BLACK,
+    GRAY_LIGHT,
     SCREEN_RECT,
 )
 from room import Room, Box
@@ -29,7 +30,7 @@ class Game():
         # Set the window title
         pg.display.set_caption('pysurvive')
         # Turn off the mouse cursor
-        # pg.mouse.set_visible(0)
+        pg.mouse.set_visible(0)
 
         # Prepare the shadow surface / screeb
         self.screen_shadow = pg.Surface(self.screen.get_size())
@@ -157,9 +158,16 @@ class Game():
                 self.player.bullet.draw(self.screen, self.get_offset())
             self.player_sprites.draw(self.screen)
 
-            # pg.draw.line(self.screen, (0, 255, 0),
-            #              (self.player.get_virt_x(), self.player.get_virt_y()),
-            #              (self.player.get_aim_x(), self.player.get_aim_y()))
+            pg.draw.line(self.screen, GRAY_LIGHT,
+                         (self.player.get_aim_x() - 5,
+                          self.player.get_aim_y() - 5),
+                         (self.player.get_aim_x() + 5,
+                          self.player.get_aim_y() + 5))
+            pg.draw.line(self.screen, GRAY_LIGHT,
+                         (self.player.get_aim_x() - 5,
+                          self.player.get_aim_y() + 5),
+                         (self.player.get_aim_x() + 5,
+                          self.player.get_aim_y() - 5))
 
             # Go ahead and update the screen with what we've drawn.
             # This MUST happen after all the other drawing commands.

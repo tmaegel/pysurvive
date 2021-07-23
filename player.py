@@ -110,8 +110,8 @@ class Player(pg.sprite.Sprite):
             self.move(_direction, self.speed)
 
         # Rotate the iamge
-        if not self.collide_by_rotation(self.get_angle()):
-            self.rotate(self.get_angle())
+        if not self.collide_by_rotation(self.get_weapon_angle()):
+            self.rotate(self.get_weapon_angle())
 
         # Handle the different sprites for animation here
         self.animate(_direction)
@@ -362,9 +362,9 @@ class Player(pg.sprite.Sprite):
         and the mouse cursor.
         """
         return (math.atan2(
-            self.get_aim_y() - (self.get_virt_y()),
-            self.get_aim_x() - (self.get_virt_x())
-            + 2 * math.pi) % (2 * math.pi))
+            self.get_aim_y() - self.get_virt_y(),
+            self.get_aim_x() - self.get_virt_x())
+            + 2 * math.pi) % (2 * math.pi)
 
     def get_weapon_angle(self):
         """
@@ -372,11 +372,11 @@ class Player(pg.sprite.Sprite):
         and the mouse cursor.
         """
         return (math.atan2(
-            self.get_aim_y() - (self.get_virt_weapon_y()),
-            self.get_aim_x() - (self.get_virt_weapon_x())
-            + 2 * math.pi) % (2 * math.pi))
+            self.get_aim_y() - self.get_virt_weapon_y(),
+            self.get_aim_x() - self.get_virt_weapon_x())
+            + 2 * math.pi) % (2 * math.pi)
 
-    def get_weapon_x(self, _offset1=19, _offset2=40):
+    def get_weapon_x(self, _offset1=17, _offset2=40):
         """
         Get the real x coordinate of the weapon in the game world.
         """
@@ -385,7 +385,7 @@ class Player(pg.sprite.Sprite):
                      - math.cos(_angle - math.pi/2) * _offset1
                      + math.cos(_angle) * _offset2)
 
-    def get_weapon_y(self, _offset1=19, _offset2=40):
+    def get_weapon_y(self, _offset1=17, _offset2=40):
         """
         Get the real y coordinate of the weapon in the game world.
         """
@@ -394,7 +394,7 @@ class Player(pg.sprite.Sprite):
                      - math.sin(_angle - math.pi/2) * _offset1
                      + math.sin(_angle) * _offset2)
 
-    def get_virt_weapon_x(self, _offset1=19, _offset2=40):
+    def get_virt_weapon_x(self, _offset1=17, _offset2=40):
         """
         Get the virtual x coordinate of weapon on the screen.
         """
@@ -403,7 +403,7 @@ class Player(pg.sprite.Sprite):
                      - math.cos(_angle - math.pi/2) * _offset1
                      + math.cos(_angle) * _offset2)
 
-    def get_virt_weapon_y(self, _offset1=19, _offset2=40):
+    def get_virt_weapon_y(self, _offset1=17, _offset2=40):
         """
         Get the virtual y coordinate of weapon on the screen.
         """
@@ -464,12 +464,14 @@ class PlayerFeet(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (
             round(self.player.get_virt_x()
-                  - math.cos(self.player.get_angle()) * self.feet_offset_px
-                  - math.cos(self.player.get_angle() - math.pi/2)
+                  - math.cos(self.player.get_weapon_angle()) *
+                  self.feet_offset_px
+                  - math.cos(self.player.get_weapon_angle() - math.pi/2)
                   * self.feet_offset_px//2),
             round(self.player.get_virt_y()
-                  - math.sin(self.player.get_angle()) * self.feet_offset_px
-                  - math.sin(self.player.get_angle() - math.pi/2)
+                  - math.sin(self.player.get_weapon_angle()) *
+                  self.feet_offset_px
+                  - math.sin(self.player.get_weapon_angle() - math.pi/2)
                   * self.feet_offset_px//2)
         )
 
@@ -479,19 +481,21 @@ class PlayerFeet(pg.sprite.Sprite):
             self.player.get_virt_y())
         self.rect.center = (
             round(self.player.get_virt_x()
-                  - math.cos(self.player.get_angle()) * self.feet_offset_px
-                  - math.cos(self.player.get_angle() - math.pi/2)
+                  - math.cos(self.player.get_weapon_angle()) *
+                  self.feet_offset_px
+                  - math.cos(self.player.get_weapon_angle() - math.pi/2)
                   * self.feet_offset_px//2),
             round(self.player.get_virt_y()
-                  - math.sin(self.player.get_angle()) * self.feet_offset_px
-                  - math.sin(self.player.get_angle() - math.pi/2)
+                  - math.sin(self.player.get_weapon_angle()) *
+                  self.feet_offset_px
+                  - math.sin(self.player.get_weapon_angle() - math.pi/2)
                   * self.feet_offset_px//2)
         )
         # Need to negate the result, if the image starts
         # at the wrong direction.
         self.image = pg.transform.rotate(
             self.feet_images[self.feet_index][self.image_index],
-            (-1 * self.player.get_angle() * (180 / math.pi)))
+            (-1 * self.player.get_weapon_angle() * (180 / math.pi)))
         # Keep the image on the same position.
         # Save its current center.
         x, y = self.rect.center
