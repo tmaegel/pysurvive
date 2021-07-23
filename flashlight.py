@@ -174,9 +174,9 @@ class Flashlight():
 
         for ray in _rays:
             polygon.append((ray.intersect['x']
-                            + self.player.game.get_offset()[0],
+                            - self.player.game.get_offset()[0],
                             ray.intersect['y']
-                            + self.player.game.get_offset()[1]))
+                            - self.player.game.get_offset()[1]))
 
         return polygon
 
@@ -238,8 +238,8 @@ class LightRay(Ray):
         if self.intersect:
             pg.draw.line(screen, RED_LIGHT,
                          (_x, _y),
-                         (self.intersect['x'] + _offset[0],
-                          self.intersect['y'] + _offset[1]))
+                         (self.intersect['x'] - _offset[0],
+                          self.intersect['y'] - _offset[1]))
             pg.draw.circle(screen, RED_LIGHT,
-                           (self.intersect['x'] + _offset[0],
-                            self.intersect['y'] + _offset[1]), 4)
+                           (self.intersect['x'] - _offset[0],
+                            self.intersect['y'] - _offset[1]), 4)

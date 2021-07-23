@@ -17,12 +17,12 @@ class Player(pg.sprite.Sprite):
 
     speed = 4
 
-    image_index = 0
     # Contains the original images
     movement_images_orig = []
     # Contains the scaled images
     movement_images = []
 
+    image_index = 0
     movement_index = 0
     movement_states = [
         'idle',
@@ -51,9 +51,14 @@ class Player(pg.sprite.Sprite):
     reload_index = 0
     reload_speed = 1
 
-    def __init__(self, _game):
+    def __init__(self, _game, _x, _y):
         # call Sprite initializer
         pg.sprite.Sprite.__init__(self)
+        # Reference to the game object
+        self.game = _game
+        # Real position of the player in the game world
+        self.x = _x
+        self.y = _y
 
         # Preloading images
         for movement in self.movement_states:
@@ -85,13 +90,6 @@ class Player(pg.sprite.Sprite):
         # Virtual position the image at the center of the screen
         # The position of image/rect used for drawing only
         self.rect.center = (SCREEN_RECT.width//2, SCREEN_RECT.height//2)
-
-        # Real position of the player in the game world
-        self.x = self.get_virt_x()
-        self.y = self.get_virt_y()
-
-        # Reference to the game object
-        self.game = _game
 
         self.feets = PlayerFeet(self)
         # Initialize the light (flashlight) with x and y from player
@@ -549,15 +547,15 @@ class Bullet(Ray):
             if self.impact:
                 # Draw the impact
                 pg.draw.circle(screen, YELLOW,
-                               (self.intersect['x'] + _offset[0],
-                                self.intersect['y'] + _offset[1]), 2)
+                               (self.intersect['x'] - _offset[0],
+                                self.intersect['y'] - _offset[1]), 2)
             else:
                 # Draw the trail of the bullet
                 pg.draw.line(screen, GRAY_LIGHT,
-                             (self.x0 + _offset[0] + math.cos(self.angle)
+                             (self.x0 - _offset[0] + math.cos(self.angle)
                               * self.trail_offset,
-                              self.y0 + _offset[1] + math.sin(self.angle)
+                              self.y0 - _offset[1] + math.sin(self.angle)
                               * self.trail_offset),
-                             (self.intersect['x'] + _offset[0],
-                              self.intersect['y'] + _offset[1]))
+                             (self.intersect['x'] - _offset[0],
+                              self.intersect['y'] - _offset[1]))
                 self.impact = True

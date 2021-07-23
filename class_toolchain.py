@@ -31,9 +31,9 @@ class Block(pg.sprite.Sprite):
         self.mask.fill()
         self.rect = self.image.get_rect()
 
-        # Set position for drawing only
-        self.rect.x = self.x
-        self.rect.y = self.y
+        # Set the initial position for drawing only
+        self.rect.x = self.x - self.game.x
+        self.rect.y = self.y - self.game.y
 
         self.segments = []
         self.segments.append(

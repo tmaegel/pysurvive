@@ -12,10 +12,12 @@ from config import (
     COLORKEY,
     BLACK,
     GRAY_LIGHT,
+    YELLOW,
     SCREEN_RECT,
 )
 from room import Room, Box
 from player import Player
+from enemy import Enemy
 
 
 class Game():
@@ -39,10 +41,12 @@ class Game():
         self.screen_shadow.set_colorkey(COLORKEY)
 
         # Absolute position of the game world
-        self.x = 0
-        self.y = 0
-
-        # Offset x, y for objects the game world
+        self.player_start_x = 500
+        self.player_start_y = 400
+        # Fix offset for objects in the game world
+        self.x = self.player_start_x - SCREEN_RECT.width//2
+        self.y = self.player_start_y - SCREEN_RECT.height//2
+        # Delta x, y for objects in the game world
         self.dx = 0.0
         self.dy = 0.0
 
@@ -65,10 +69,15 @@ class Game():
              for room in self.room_sprites.sprites()),
             Box(self, 300, 300, 75)
         )
+        self.enemy_sprites = pg.sprite.RenderPlain(
+            Enemy(self, 1185, 400),
+        )
         # A sprite group that contains all close room sprites (render only)
         self.room_render_sprites = pg.sprite.RenderPlain()
         # A sprite group that contains all close block sprites (render only)
         self.block_render_sprites = pg.sprite.RenderPlain()
+        # A sprite group that contains all close enemy sprites (render only)
+        self.enemy_render_sprites = pg.sprite.RenderPlain()
         # A sprite group that contains all close sprites (collision only)
         self.collide_sprites = pg.sprite.RenderPlain()
 
@@ -82,7 +91,7 @@ class Game():
                     self.unique_block_points.append(point)
 
         # Player
-        self.player = Player(self)
+        self.player = Player(self, self.player_start_x, self.player_start_y)
         # A sprite group that contains all player sprites
         self.player_sprites = pg.sprite.RenderPlain(
             (self.player.feets, self.player))
@@ -139,6 +148,7 @@ class Game():
 
             self.player_sprites.update([direction_x, direction_y])
             # @todo: Update not all objects later
+            self.enemy_sprites.update()
             self.room_sprites.update()
             self.block_sprites.update()
 
@@ -157,13 +167,14 @@ class Game():
             if self.player.bullet:
                 self.player.bullet.draw(self.screen, self.get_offset())
             self.player_sprites.draw(self.screen)
+            self.enemy_sprites.draw(self.screen)
 
-            pg.draw.line(self.screen, GRAY_LIGHT,
+            pg.draw.line(self.screen, YELLOW,
                          (self.player.get_aim_x() - 5,
                           self.player.get_aim_y() - 5),
                          (self.player.get_aim_x() + 5,
                           self.player.get_aim_y() + 5))
-            pg.draw.line(self.screen, GRAY_LIGHT,
+            pg.draw.line(self.screen, YELLOW,
                          (self.player.get_aim_x() - 5,
                           self.player.get_aim_y() + 5),
                          (self.player.get_aim_x() + 5,
@@ -178,8 +189,8 @@ class Game():
     def set_offset(self, _dx, _dy):
         self.dx = _dx
         self.dy = _dy
-        self.x = round(self.x + _dx)
-        self.y = round(self.y + _dy)
+        self.x = round(self.x - _dx)
+        self.y = round(self.y - _dy)
 
     def get_offset(self):
         return (self.x, self.y)
