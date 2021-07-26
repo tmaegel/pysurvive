@@ -1,4 +1,5 @@
 import pygame as pg
+import triangle as tr
 from pygame.locals import (
     QUIT,
     K_ESCAPE,
@@ -58,16 +59,16 @@ class Game():
 
         # A sprite group that contains all room sprites
         self.room_sprites = pg.sprite.RenderPlain(
-            Room(self, 100, 100, 800, 600, ('left', 'right')),
-            Room(self, -385, -100, 500, 1000, ('bottom', 'right')),
-            Room(self, -385, 885, 500, 250, ('top')),
-            Room(self, 885, 200, 600, 400, ('left')),
+            Room(100, 100, 800, 600, ('left', 'right'), self.x, self.y),
+            Room(-385, -100, 500, 1000, ('bottom', 'right'), self.x, self.y),
+            Room(-385, 885, 500, 250, ('top'), self.x, self.y),
+            Room(885, 200, 600, 400, ('left'), self.x, self.y),
         )
         # A sprite group that contains all wall sprites
         self.block_sprites = pg.sprite.RenderPlain(
             ((wall for wall in room.walls)
              for room in self.room_sprites.sprites()),
-            Box(self, 300, 300, 75)
+            Box(300, 300, 75, self.x, self.y)
         )
         self.enemy_sprites = pg.sprite.RenderPlain(
             Enemy(self, 1185, 400),
@@ -89,6 +90,9 @@ class Game():
                 point = (block_point[0], block_point[1])
                 if point not in self.unique_block_points:
                     self.unique_block_points.append(point)
+
+        self.navmesh = {}
+        self.navmesh['vertices'], self.navmesh['triangles'] = self.generate_navmesh()
 
         # Player
         self.player = Player(self, self.player_start_x, self.player_start_y)
@@ -149,8 +153,8 @@ class Game():
             self.player_sprites.update([direction_x, direction_y])
             # @todo: Update not all objects later
             self.enemy_sprites.update()
-            self.room_sprites.update()
-            self.block_sprites.update()
+            self.room_sprites.update(self.dx, self.dy)
+            self.block_sprites.update(self.dx, self.dy)
 
             #
             # Drawing
@@ -180,11 +184,69 @@ class Game():
                          (self.player.get_aim_x() + 5,
                           self.player.get_aim_y() - 5))
 
+            # Debugging
+            # Draw navmesh
+            for triangle in self.navmesh['triangles']:
+                polygon = []
+                for index in triangle:
+                    point = self.navmesh['vertices'][index]
+                    polygon.append((point[0] - self.x, point[1] - self.y))
+                pg.draw.polygon(self.screen, (255, 0, 0), polygon, 1)
+
             # Go ahead and update the screen with what we've drawn.
             # This MUST happen after all the other drawing commands.
             pg.display.flip()
             # This limits the while loop to a max of FPS times per second.
             clock.tick(FPS)
+
+    def generate_navmesh(self, _offset=15):
+        doors = []
+        vertices = []
+        segments = []
+        holes = []
+
+        def make_box(x, y, w, h):
+            i = len(vertices)
+            # 2d array that stores the xy position of each vertex.
+            vertices.extend([[x, y],
+                             [x + w, y],
+                             [x + w, y + h],
+                             [x, y + h]])
+            # 2d array that stores segments.
+            # egments are edges whose presence in the triangulation
+            # is enforced. Each segment is specified by listing the
+            # indices of its two endpoints.
+            segments.extend([(i+0, i+1),
+                             (i+1, i+2),
+                             (i+2, i+3),
+                             (i+3, i+0)])
+
+        # Add rooms with offset (exlude walls at the sides) from navmesh.
+        for room in self.room_sprites.sprites():
+            make_box(room.x + _offset, room.y + _offset,
+                     room.width - _offset * 2, room.height - _offset * 2)
+            # Extract the doors of each room.
+            # Do not append duplicates.
+            for door in room.get_door():
+                if door not in doors:
+                    doors.append(door)
+
+        # Add doors to navmesh to connect the rooms
+        for door in doors:
+            make_box(door.x, door.y, door.width, door.height)
+
+        # for block in self.block_sprites.sprites():
+        #     make_box(block.x + _offset, block.y + _offset,
+        #              block.width - _offset * 2, block.height - _offset * 2)
+
+        block = self.block_sprites.sprites()[-1]
+        make_box(block.x, block.y, block.width, block.height)
+        holes.append(block.get_center())
+
+        A = dict(vertices=vertices, segments=segments, holes=holes)
+        B = tr.triangulate(A, 'pA')
+
+        return B['vertices'].tolist(), B['triangles'].tolist()
 
     def set_offset(self, _dx, _dy):
         self.dx = _dx
