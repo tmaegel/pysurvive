@@ -17,9 +17,8 @@ class Block(pg.sprite.Sprite):
             self.x2 = _x2
             self.y2 = _y2
 
-    def __init__(self, _game, _x, _y, _width, _height):
+    def __init__(self, _x, _y, _width, _height, _xoffset, _yoffset):
         pg.sprite.Sprite.__init__(self)
-        self.game = _game
         self.x = _x
         self.y = _y
         self.width = _width
@@ -32,8 +31,8 @@ class Block(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
 
         # Set the initial position for drawing only
-        self.rect.x = self.x - self.game.x
-        self.rect.y = self.y - self.game.y
+        self.rect.x = self.x - _xoffset
+        self.rect.y = self.y - _yoffset
 
         self.segments = []
         self.segments.append(
@@ -51,16 +50,19 @@ class Block(pg.sprite.Sprite):
             self.BlockSegment(self.x, self.y + self.height,
                               self.x, self.y))
 
-    def update(self):
+    def update(self, _dx, _dy):
         # Update x, y position of the rect for drawing only
-        self.rect.x = round(self.rect.x + self.game.dx)
-        self.rect.y = round(self.rect.y + self.game.dy)
+        self.rect.x = round(self.rect.x + _dx)
+        self.rect.y = round(self.rect.y + _dy)
 
     def get_points(self):
         return ((self.x, self.y),
                 (self.x + self.width, self.y),
                 (self.x + self.width, self.y + self.height),
                 (self.x, self.y + self.height))
+
+    def get_center(self):
+        return [self.x + self.width//2, self.y + self.height//2]
 
 
 class Ray():
