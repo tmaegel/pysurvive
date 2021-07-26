@@ -6,16 +6,15 @@ from config import (
     IMAGE_DIR,
 )
 from utils import load_image
+from spritesheet import Spritesheet
 
 
 class Enemy(pg.sprite.Sprite):
 
     speed = 4
 
-    # Contains the original images
-    movement_images_orig = []
     # Contains the scaled images
-    movement_images = []
+    images = []
 
     # Define the single movement states.
     # Each movement state is represented by a dictionary.
@@ -28,15 +27,18 @@ class Enemy(pg.sprite.Sprite):
     movement_states = [
         {
             'name': 'idle',
-            'speed': 1
+            'speed': 1,
+            'length': 17,
         },
         {
             'name': 'move',
-            'speed': 1
+            'speed': 1,
+            'length': 17,
         },
         {
             'name': 'attack',
-            'speed': 3
+            'speed': 3,
+            'length': 9,
         },
     ]
 
@@ -49,26 +51,36 @@ class Enemy(pg.sprite.Sprite):
         self.x = _x
         self.y = _y
 
+        # for movement in self.movement_states:
+        #     _images = []
+        #     _spritesheet = Spritesheet(
+        #         IMAGE_DIR + 'zombie/' + movement['name'] + '/spritesheet.png')
+        #     for i in range(movement['length']):
+        #         sprite = _spritesheet.parse_sprite(i)
+        #         _images.append(
+        #             pg.transform.scale(sprite,
+        #                                (sprite.get_rect().width//3,
+        #                                 sprite.get_rect().height//3)))
+        #     self.images.append(_images)
+
         # Preloading images
         for movement in self.movement_states:
-            images_orig = []
-            images = []
+            _images = []
             directory = IMAGE_DIR + 'zombie/' + movement['name'] + '/'
             if os.path.isdir(directory):
                 path, _, files = next(os.walk(directory))
                 for img in sorted(files):
-                    image, _ = load_image(path + img, alpha=True, path=False)
-                    images_orig.append(image)
-                    images.append(pg.transform.scale(
-                        image, (image.get_rect().width//3,
-                                image.get_rect().height//3)))
-                self.movement_images_orig.append(images_orig)
-                self.movement_images.append(images)
+                    if 'spritesheet' not in img:
+                        image, _ = load_image(
+                            path + img, alpha=True, path=False)
+                        _images.append(pg.transform.scale(
+                            image, (image.get_rect().width//3,
+                                    image.get_rect().height//3)))
+                self.images.append(_images)
             else:
                 print('warn: Directory ' + directory + ' doesnt exists.')
 
-        self.image = self.movement_images[self.movement_index][
-            self.image_index]
+        self.image = self.images[self.movement_index][self.image_index]
         self.mask = pg.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
 
@@ -97,7 +109,7 @@ class Enemy(pg.sprite.Sprite):
         :param angle: Rotation angle
         """
         self.image = pg.transform.rotate(
-            self.movement_images[self.movement_index][self.image_index],
+            self.images[self.movement_index][self.image_index],
             (-1 * _angle * (180 / math.pi)))
         # Recreating mask after every rotation
         self.mask = pg.mask.from_surface(self.image)
@@ -116,7 +128,7 @@ class Enemy(pg.sprite.Sprite):
         def _switch_animation():
             self.animation_counter = 0
             if ((self.image_index + 1)
-                    < len(self.movement_images[self.movement_index])):
+                    < len(self.images[self.movement_index])):
                 self.image_index += 1
             else:
                 self.image_index = 0

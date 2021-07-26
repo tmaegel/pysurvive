@@ -17,19 +17,43 @@ class Player(pg.sprite.Sprite):
 
     speed = 4
 
-    # Contains the original images
-    movement_images_orig = []
     # Contains the scaled images
-    movement_images = []
+    images = []
 
+    # Define the single movement states.
+    # Each movement state is represented by a dictionary.
+    # The speed attribute descripe the animation speed.
+    # The next animation will be showed if the counter reach
+    # the speed number.
+    animation_counter = 0
     image_index = 0
     movement_index = 0
     movement_states = [
-        'idle',
-        'move',
-        'meleeattack',
-        'shoot',
-        'reload',
+        {
+            'name': 'idle',
+            'speed': 1,
+            'length': 20,
+        },
+        {
+            'name': 'move',
+            'speed': 1,
+            'length': 20,
+        },
+        {
+            'name': 'meleeattack',
+            'speed': 1,
+            'length': 15,
+        },
+        {
+            'name': 'shoot',
+            'speed': 0,
+            'length': 3,
+        },
+        {
+            'name': 'reload',
+            'speed': 1,
+            'length': 15,
+        },
     ]
     weapon_index = 1
     weapon_status = [
@@ -45,12 +69,6 @@ class Player(pg.sprite.Sprite):
     shooting = False
     reloading = False
 
-    # This limit the speed of the activity.
-    # The next image of that animation is switch
-    # if e.g. reload_index == reload_speed and is reset.
-    reload_index = 0
-    reload_speed = 1
-
     def __init__(self, _game, _x, _y):
         # call Sprite initializer
         pg.sprite.Sprite.__init__(self)
@@ -62,20 +80,20 @@ class Player(pg.sprite.Sprite):
 
         # Preloading images
         for movement in self.movement_states:
-            images_orig = []
-            images = []
+            _images = []
             directory = IMAGE_DIR + 'player/' + \
-                self.weapon_status[self.weapon_index] + '/' + movement + '/'
+                self.weapon_status[self.weapon_index] + \
+                '/' + movement['name'] + '/'
             if os.path.isdir(directory):
                 path, _, files = next(os.walk(directory))
                 for img in sorted(files):
-                    image, _ = load_image(path + img, alpha=True, path=False)
-                    images_orig.append(image)
-                    images.append(pg.transform.scale(
-                        image, (image.get_rect().width//3,
-                                image.get_rect().height//3)))
-                self.movement_images_orig.append(images_orig)
-                self.movement_images.append(images)
+                    if 'spritesheet' not in img:
+                        image, _ = load_image(
+                            path + img, alpha=True, path=False)
+                        _images.append(pg.transform.scale(
+                            image, (image.get_rect().width//3,
+                                    image.get_rect().height//3)))
+                self.images.append(_images)
             else:
                 print('warn: Directory ' + directory + ' doesnt exists.')
 
@@ -83,7 +101,7 @@ class Player(pg.sprite.Sprite):
         self.sound_shot = load_sound('shot/pistol.wav')
         self.sound_reload = load_sound('reload/pistol.wav')
 
-        self.image = self.movement_images[self.movement_index][
+        self.image = self.images[self.movement_index][
             self.image_index]
         self.mask = pg.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
@@ -172,7 +190,7 @@ class Player(pg.sprite.Sprite):
         :param angle: Rotation angle
         """
         self.image = pg.transform.rotate(
-            self.movement_images[self.movement_index][self.image_index],
+            self.images[self.movement_index][self.image_index],
             (-1 * _angle * (180 / math.pi)))
         # Recreating mask after every rotation
         self.mask = pg.mask.from_surface(self.image)
@@ -185,6 +203,36 @@ class Player(pg.sprite.Sprite):
         self.rect.center = (x, y)
 
     def animate(self, _direction):
+        def _switch_animation():
+            self.animation_counter = 0
+            if ((self.image_index + 1)
+                    < len(self.images[self.movement_index])):
+                self.image_index += 1
+            else:
+                # Animation is finished
+                self.image_index = 0
+                # If idle
+                if self.movement_index == 0:
+                    pass
+                # If move
+                elif self.movement_index == 1:
+                    pass
+                # If attacking
+                elif self.movement_index == 2:
+                    pass
+                # If shooting
+                elif self.movement_index == 3:
+                    # rest movement after shooting
+                    self.movement_index = 0
+                    self.shooting = False
+                    # If shot is finished, delete bullet object
+                    del self.bullet
+                # If reloading
+                elif self.movement_index == 4:
+                    # reset movement after reloading
+                    self.movement_index = 0
+                    self.reloading = False
+
         # Increase the image_index if there is a movement only
         if not self.shooting and not self.reloading:
             if _direction[0] != 0 or _direction[1] != 0:
@@ -194,53 +242,11 @@ class Player(pg.sprite.Sprite):
                 # Idle state
                 self.movement_index = 0
 
-        # Increase the image index. The reset of the image index
-        # depends on the movement index.
-        if ((self.image_index + 1)
-                < len(self.movement_images[self.movement_index])):
-            # If idle
-            if self.movement_index == 0:
-                self.image_index += 1
-            # If moving
-            elif self.movement_index == 1:
-                self.image_index += 1
-            # If attacking
-            elif self.movement_index == 2:
-                self.image_index += 1
-            # If shooting
-            elif self.movement_index == 3:
-                self.image_index += 1
-            # If reloading
-            elif self.movement_index == 4:
-                self.image_index += 1
-            else:
-                self.image_index += 1
+        if (self.animation_counter
+                >= self.movement_states[self.movement_index]['speed']):
+            _switch_animation()
         else:
-            # If idle
-            if self.movement_index == 0:
-                self.image_index = 0
-            # If moving
-            elif self.movement_index == 1:
-                self.image_index = 0
-            # If attacking
-            elif self.movement_index == 2:
-                self.image_index = 0
-            # If shooting
-            elif self.movement_index == 3:
-                # rest movement after shooting
-                self.image_index = 0
-                self.movement_index = 0
-                self.shooting = False
-                # If shot is finished, delete bullet object
-                del self.bullet
-            # If reloading
-            elif self.movement_index == 4:
-                # reset movement after reloading
-                self.image_index = 0
-                self.movement_index = 0
-                self.reloading = False
-            else:
-                self.image_index = 0
+            self.animation_counter += 1
 
         # self.feets.move(direction)
 
@@ -420,6 +426,9 @@ class PlayerFeet(pg.sprite.Sprite):
     # @workaroung: offset (20) for rifle, shutgun and knife
     feet_offset_px = 10
 
+    # Contains the scaled images
+    images = []
+
     image_index = 0
     feet_index = 0
     feet_states = [
@@ -435,30 +444,23 @@ class PlayerFeet(pg.sprite.Sprite):
         pg.sprite.Sprite.__init__(self)
         self.player = _player
 
-        # Contains the original images
-        self.feet_images_orig = []
-        # Contains the scaled images
-        self.feet_images = []
-
         for feet in self.feet_states:
-            images_orig = []
-            images = []
+            _images = []
             directory = IMAGE_DIR + 'player/feet/' + feet + '/'
             if os.path.isdir(directory):
                 path, _, files = next(os.walk(directory))
                 for img in sorted(files):
-                    image, _ = load_image(
-                        path + img, alpha=True, path=False)
-                    images_orig.append(image)
-                    images.append(pg.transform.scale(
-                        image, (image.get_rect().width//3,
-                                image.get_rect().height//3)))
-                self.feet_images_orig.append(images_orig)
-                self.feet_images.append(images)
+                    if 'spritesheet' not in img:
+                        image, _ = load_image(
+                            path + img, alpha=True, path=False)
+                        _images.append(pg.transform.scale(
+                            image, (image.get_rect().width//3,
+                                    image.get_rect().height//3)))
+                self.images.append(_images)
             else:
                 print('warn: Directory ' + directory + ' doesnt exists.')
 
-        self.image = self.feet_images[self.feet_index][self.image_index]
+        self.image = self.images[self.feet_index][self.image_index]
         self.rect = self.image.get_rect()
         self.rect.center = (
             round(self.player.get_virt_x()
@@ -492,7 +494,7 @@ class PlayerFeet(pg.sprite.Sprite):
         # Need to negate the result, if the image starts
         # at the wrong direction.
         self.image = pg.transform.rotate(
-            self.feet_images[self.feet_index][self.image_index],
+            self.images[self.feet_index][self.image_index],
             (-1 * self.player.get_weapon_angle() * (180 / math.pi)))
         # Keep the image on the same position.
         # Save its current center.
@@ -517,7 +519,7 @@ class PlayerFeet(pg.sprite.Sprite):
             self.feet_index = 1
 
             if ((self.image_index + 1)
-                    < len(self.feet_images[self.feet_index])):
+                    < len(self.images[self.feet_index])):
                 self.image_index += 1
             else:
                 self.image_index = 0
