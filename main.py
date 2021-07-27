@@ -1,5 +1,4 @@
 import pygame as pg
-import triangle as tr
 from pygame.locals import (
     QUIT,
     K_ESCAPE,
@@ -16,9 +15,26 @@ from config import (
     YELLOW,
     SCREEN_RECT,
 )
+from navmesh import NavMesh
 from room import Room, Box
 from player import Player
 from enemy import Enemy
+
+
+class Screen(pg.sprite.Sprite):
+
+    """
+    Simple screen class to detect wheather objects
+    are visible on the screen.
+    """
+
+    def __init__(self, _size):
+        pg.sprite.Sprite.__init__(self)
+
+        self.image = pg.Surface(_size)
+        self.rect = self.image.get_rect()
+        self.rect.x = 0
+        self.rect.y = 0
 
 
 class Game():
@@ -42,8 +58,8 @@ class Game():
         self.screen_shadow.set_colorkey(COLORKEY)
 
         # Absolute position of the game world
-        self.player_start_x = 500
-        self.player_start_y = 400
+        self.player_start_x = 400
+        self.player_start_y = 200
         # Fix offset for objects in the game world
         self.x = self.player_start_x - SCREEN_RECT.width//2
         self.y = self.player_start_y - SCREEN_RECT.height//2
@@ -91,8 +107,8 @@ class Game():
                 if point not in self.unique_block_points:
                     self.unique_block_points.append(point)
 
-        self.navmesh = {}
-        self.navmesh['vertices'], self.navmesh['triangles'] = self.generate_navmesh()
+        # Initialize the navmesh based on the map.
+        self.navmesh = NavMesh(self)
 
         # Player
         self.player = Player(self, self.player_start_x, self.player_start_y)
@@ -186,67 +202,27 @@ class Game():
 
             # Debugging
             # Draw navmesh
-            for triangle in self.navmesh['triangles']:
-                polygon = []
-                for index in triangle:
-                    point = self.navmesh['vertices'][index]
-                    polygon.append((point[0] - self.x, point[1] - self.y))
-                pg.draw.polygon(self.screen, (255, 0, 0), polygon, 1)
+            for tri in self.navmesh.mesh:
+                triangle = [(p[0] - self.x, p[1] - self.y)
+                            for p in tri.triangle]
+                pg.draw.polygon(self.screen, (255, 0, 0), triangle, 1)
+                for node in tri.nodes:
+                    pg.draw.circle(self.screen, (0, 255, 0),
+                                   (node.position[0] - self.x,
+                                    node.position[1] - self.y), 2)
+
+            self.path = self.navmesh.get_astar_path((1185, 400),
+                                                    (self.player.get_x(), self.player.get_y()))
+            self.path = [(p[0] - self.x, p[1] - self.y) for p in self.path]
+
+            if self.path:
+                pg.draw.lines(self.screen, (0, 0, 255), False, self.path)
 
             # Go ahead and update the screen with what we've drawn.
             # This MUST happen after all the other drawing commands.
             pg.display.flip()
             # This limits the while loop to a max of FPS times per second.
             clock.tick(FPS)
-
-    def generate_navmesh(self, _offset=15):
-        doors = []
-        vertices = []
-        segments = []
-        holes = []
-
-        def make_box(x, y, w, h):
-            i = len(vertices)
-            # 2d array that stores the xy position of each vertex.
-            vertices.extend([[x, y],
-                             [x + w, y],
-                             [x + w, y + h],
-                             [x, y + h]])
-            # 2d array that stores segments.
-            # egments are edges whose presence in the triangulation
-            # is enforced. Each segment is specified by listing the
-            # indices of its two endpoints.
-            segments.extend([(i+0, i+1),
-                             (i+1, i+2),
-                             (i+2, i+3),
-                             (i+3, i+0)])
-
-        # Add rooms with offset (exlude walls at the sides) from navmesh.
-        for room in self.room_sprites.sprites():
-            make_box(room.x + _offset, room.y + _offset,
-                     room.width - _offset * 2, room.height - _offset * 2)
-            # Extract the doors of each room.
-            # Do not append duplicates.
-            for door in room.get_door():
-                if door not in doors:
-                    doors.append(door)
-
-        # Add doors to navmesh to connect the rooms
-        for door in doors:
-            make_box(door.x, door.y, door.width, door.height)
-
-        # for block in self.block_sprites.sprites():
-        #     make_box(block.x + _offset, block.y + _offset,
-        #              block.width - _offset * 2, block.height - _offset * 2)
-
-        block = self.block_sprites.sprites()[-1]
-        make_box(block.x, block.y, block.width, block.height)
-        holes.append(block.get_center())
-
-        A = dict(vertices=vertices, segments=segments, holes=holes)
-        B = tr.triangulate(A, 'pA')
-
-        return B['vertices'].tolist(), B['triangles'].tolist()
 
     def set_offset(self, _dx, _dy):
         self.dx = _dx
@@ -256,22 +232,6 @@ class Game():
 
     def get_offset(self):
         return (self.x, self.y)
-
-
-class Screen(pg.sprite.Sprite):
-
-    """
-    Simple screen class to detect wheather objects
-    are visible on the screen.
-    """
-
-    def __init__(self, _size):
-        pg.sprite.Sprite.__init__(self)
-
-        self.image = pg.Surface(_size)
-        self.rect = self.image.get_rect()
-        self.rect.x = 0
-        self.rect.y = 0
 
 
 if __name__ == '__main__':

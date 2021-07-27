@@ -15,7 +15,7 @@ from flashlight import Flashlight
 
 class Player(pg.sprite.Sprite):
 
-    speed = 4
+    speed = 6
 
     # Contains the scaled images
     images = []
