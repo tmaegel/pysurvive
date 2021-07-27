@@ -79,36 +79,40 @@ class NavMesh():
 
         return mesh
 
+    def _get_triangle_of_point(self, point):
+        """
+        Returns the triagle (navmesh section) in which
+        the point is located.
+        """
+
+        for triangle in self.mesh:
+            if triangle.is_point_in_triangle(point):
+                return triangle
+
     def get_astar_path(self, start, end):
         """
         Returns a list of tuples as a path from the given start
         to the given end point.
         """
 
-        path = []
-        start_node = None
-        end_node = None
+        # Find the triangles of start and end position and get
+        # the first node of this triangle as starting point.
+        start_tri = self._get_triangle_of_point(start)
+        end_tri = self._get_triangle_of_point(end)
+        start_node = start_tri.nodes[0]
+        end_node = end_tri.nodes[0]
 
+        path = []
         open_list = []
         closed_list = []
 
-        # Find the triangles of start and end position.
-        for tri in self.mesh:
-            if tri.is_point_in_triangle(start):
-                start_node = tri.nodes[0]  # Get first node
-                break
-        for tri in self.mesh:
-            if tri.is_point_in_triangle(end):
-                end_node = tri.nodes[0]  # Get first node
-                break
-
         # Both point are located on the same triangle
-        if start_node is end_node:
+        if start_tri is end_tri:
             path.append(start)
             path.append(end)
             return path
         # One or both points are outside all triangles
-        elif not start_node or not end_node:
+        elif not start_tri or not end_tri:
             print("warn: start and/or end point are outside of triangle.")
         # Both points are located on different triangles
         else:
@@ -222,13 +226,16 @@ class Triangle():
     def __init__(self, _triangle):
         # List of points of this node / triangle
         self.triangle = _triangle
+        # Center point of this triangle
+        self.center = self._get_center()
 
         self.nodes = self._get_nodes()
-        # Center point of this triangle is one possible node
-        # self.nodes.append(Node(self, None, self._get_center()))
 
         # List of adjacent trianles
         self.neighbors = []
+
+    def __eq__(self, other):
+        return self.center == other.center
 
     def _get_center(self):
         """
