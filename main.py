@@ -36,6 +36,9 @@ class Game():
         pg.display.set_caption('pysurvive')
         # Turn off the mouse cursor
         pg.mouse.set_visible(0)
+        # Limit the number of allowed pygame events.
+        pg.event.set_allowed(
+            [QUIT, KEYDOWN, K_ESCAPE, MOUSEBUTTONDOWN, MOUSEBUTTONUP])
 
         self.fps_font = pg.font.SysFont("Arial", 14)
 
@@ -66,7 +69,8 @@ class Game():
             Room(100, 100, 800, 600, ('left', 'right'), self.x, self.y),
             Room(-385, -100, 500, 1000, ('bottom', 'right'), self.x, self.y),
             Room(-385, 885, 500, 250, ('top'), self.x, self.y),
-            Room(885, 200, 600, 400, ('left'), self.x, self.y),
+            Room(885, 200, 600, 400, ('left', 'right'), self.x, self.y),
+            Room(1470, 200, 600, 400, ('left'), self.x, self.y),
         )
         # A sprite group that contains all wall sprites
         self.block_sprites = pg.sprite.RenderPlain(
@@ -136,17 +140,17 @@ class Game():
             direction_x = keystate[pg.K_d] - keystate[pg.K_a]
             direction_y = keystate[pg.K_s] - keystate[pg.K_w]
 
-            # Fill the screen with the default background color
+            # Fill the screen with the default background color.
             self.screen.fill(BLACK)
 
             #
             # Refactor the render sprites group
             #
 
-            # Remove all sprites of the previous loop
+            # Remove all sprites of the previous loop.
             self.block_render_sprites.empty()
             self.room_render_sprites.empty()
-            # Find the new sprites
+            # Find the new sprites.
             self.block_render_sprites.add(pg.sprite.spritecollide(
                 self.screen_sprite, self.block_sprites, False,
                 collided=pg.sprite.collide_rect))
@@ -159,7 +163,8 @@ class Game():
             #
 
             self.player_sprites.update([direction_x, direction_y], dt)
-            # @todo: Update not all objects later
+            # Update all objects here otherwise the mechanism for
+            # detecting which objects are on the screen is overridden.
             self.enemy_sprites.update(dt)
             self.room_sprites.update(self.dx, self.dy)
             self.block_sprites.update(self.dx, self.dy)
@@ -170,8 +175,9 @@ class Game():
 
             self.room_render_sprites.draw(self.screen)
 
-            # @todo: Do not use alle wall objects to
-            # render/calculate the shadow
+            # Currently, all vertices within a virtual screen of
+            # 3x width and 3x height of the screen are used.
+            # Later when the visibility is limited, this can be further reduced.
             self.screen_shadow.fill(BLACK)
             self.player.light.draw(self.screen_shadow)
             self.screen.blit(self.screen_shadow, (0, 0))
@@ -180,8 +186,10 @@ class Game():
             if self.player.bullet:
                 self.player.bullet.draw(self.screen, self.get_offset())
             self.player_sprites.draw(self.screen)
+            # @todo: Do not draw all enemies later.
             self.enemy_sprites.draw(self.screen)
 
+            # Draw a cross as mouse cursor.
             pg.draw.line(self.screen, YELLOW,
                          (self.player.get_aim_x() - 5,
                           self.player.get_aim_y() - 5),
@@ -195,23 +203,24 @@ class Game():
 
             # Debugging
             # Draw navmesh
-            for tri in self.navmesh.mesh:
-                triangle = [(p[0] - self.x, p[1] - self.y)
-                            for p in tri.triangle]
-                pg.draw.polygon(self.screen, (255, 0, 0), triangle, 1)
-                for node in tri.nodes:
-                    pg.draw.circle(self.screen, (0, 255, 0),
-                                   (node.position[0] - self.x,
-                                    node.position[1] - self.y), 2)
+            # for tri in self.navmesh.mesh:
+            #     triangle = [(p[0] - self.x, p[1] - self.y)
+            #                 for p in tri.triangle]
+            #     pg.draw.polygon(self.screen, (255, 0, 0), triangle, 1)
+            #     for node in tri.nodes:
+            #         pg.draw.circle(self.screen, (0, 255, 0),
+            #                        (node.position[0] - self.x,
+            #                         node.position[1] - self.y), 2)
 
-            self.path = self.navmesh.get_astar_path(
-                (1185, 400), (self.player.get_x(), self.player.get_y()))
-            self.path = [(p[0] - self.x, p[1] - self.y) for p in self.path]
+            # self.path = self.navmesh.get_astar_path(
+            #     (1185, 400), (self.player.get_x(), self.player.get_y()))
+            # self.path = [(p[0] - self.x, p[1] - self.y) for p in self.path]
 
-            if self.path:
-                pg.draw.lines(self.screen, (0, 0, 255), False, self.path)
+            # if self.path:
+            #     pg.draw.lines(self.screen, (0, 0, 255), False, self.path)
 
             self.screen.blit(self.update_fps(), (5, 5))
+
             # Go ahead and update the screen with what we've drawn.
             # This MUST happen after all the other drawing commands.
             pg.display.flip()
@@ -226,6 +235,20 @@ class Game():
 
     def get_offset(self):
         return (self.x, self.y)
+
+    def get_block_points_on_screen(self):
+        _block_points = []
+        _offset = self.get_offset()
+        _oversized_screen = pg.Rect(
+            _offset[0] - SCREEN_RECT.width,
+            _offset[1] - SCREEN_RECT.height,
+            SCREEN_RECT.width*3,
+            SCREEN_RECT.height*3)
+        for point in self.unique_block_points:
+            if _oversized_screen.collidepoint(point):
+                _block_points.append(point)
+
+        return _block_points
 
     def update_fps(self):
         fps = str(int(self.clock.get_fps()))

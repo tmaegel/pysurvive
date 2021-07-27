@@ -45,7 +45,7 @@ class Flashlight():
         # are needed to hit the wall/block(s) behind any given segment corner.
         # unique_angles = [ray1.angle, ray2.angle]
         unique_angles = []
-        for point in self.player.game.unique_block_points:
+        for point in self.player.game.get_block_points_on_screen():
             # point = (point[0], point[1])
             # Build the triangle from x0, y0 (player position) and both
             # farthest intersections with the walls.

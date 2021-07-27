@@ -143,7 +143,7 @@ class Room(pg.sprite.Sprite):
                                    _yoffset))
 
     def update(self, _dx, _dy):
-        # Update x, y position of the rect for drawing only
+        # Update x, y position of the rect for drawing only.
         self.rect.x = round(self.rect.x + _dx)
         self.rect.y = round(self.rect.y + _dy)
 
