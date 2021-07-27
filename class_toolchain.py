@@ -1,6 +1,41 @@
 import math
 import pygame as pg
 
+from config import (
+    FPS,
+)
+
+
+class Animation(pg.sprite.Sprite):
+
+    def __init__(self):
+        # call Sprite initializer
+        pg.sprite.Sprite.__init__(self)
+        # Contains a list of images/frames.
+        self.images = []
+        # Current image of the animation sequence/images.
+        self.frame = 0
+        # Next time it has to be updated in ms.
+        self._next_update = 0
+        # Frequency/period of the animation in ms.
+        self._period = 1000./FPS
+
+
+class Screen(pg.sprite.Sprite):
+
+    """
+    Simple screen class to detect wheather objects
+    are visible on the screen.
+    """
+
+    def __init__(self, _size):
+        pg.sprite.Sprite.__init__(self)
+
+        self.image = pg.Surface(_size)
+        self.rect = self.image.get_rect()
+        self.rect.x = 0
+        self.rect.y = 0
+
 
 class Block(pg.sprite.Sprite):
 

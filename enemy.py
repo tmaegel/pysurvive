@@ -6,52 +6,38 @@ from config import (
     IMAGE_DIR,
 )
 from utils import load_image
+from class_toolchain import Animation
 from spritesheet import Spritesheet
 
 
-class Enemy(pg.sprite.Sprite):
+class Enemy(Animation):
 
     speed = 4
 
-    # Contains the scaled images
-    images = []
-
     # Define the single movement states.
     # Each movement state is represented by a dictionary.
-    # The speed attribute descripe the animation speed.
-    # The next animation will be showed if the counter reach
-    # the speed number.
-    animation_counter = 0
-    image_index = 0
     movement_index = 0
-    movement_states = [
+    movements = [
         {
             'name': 'idle',
-            'speed': 1,
-            'length': 17,
         },
         {
             'name': 'move',
-            'speed': 1,
-            'length': 17,
         },
         {
             'name': 'attack',
-            'speed': 3,
-            'length': 9,
         },
     ]
 
     def __init__(self, _game, _x, _y):
-        # call Sprite initializer
-        pg.sprite.Sprite.__init__(self)
+        Animation.__init__(self)
         # Reference to the game object
         self.game = _game
         # Real position of the room in the game world
         self.x = _x
         self.y = _y
 
-        # for movement in self.movement_states:
+        # for movement in self.movements:
         #     _images = []
         #     _spritesheet = Spritesheet(
         #         IMAGE_DIR + 'zombie/' + movement['name'] + '/spritesheet.png')
@@ -64,7 +50,7 @@ class Enemy(pg.sprite.Sprite):
         #     self.images.append(_images)
 
         # Preloading images
-        for movement in self.movement_states:
+        for movement in self.movements:
             _images = []
             directory = IMAGE_DIR + 'zombie/' + movement['name'] + '/'
             if os.path.isdir(directory):
@@ -80,22 +66,39 @@ class Enemy(pg.sprite.Sprite):
             else:
                 print('warn: Directory ' + directory + ' doesnt exists.')
 
-        self.image = self.images[self.movement_index][self.image_index]
+        self.image = self.images[self.movement_index][0]
         self.mask = pg.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
 
         self.rect.centerx = self.x - self.game.x
         self.rect.centery = self.y - self.game.y
 
-    def update(self):
+    def update(self, _dt):
+        """
+        Update the enemy object.
+        """
+
+        # Accumulate time since last update.
+        self._next_update += _dt
+        # If more time has passed as a period, then we need to update.
+        if self._next_update >= self._period:
+            # Skipping frames if too much time has passed.
+            # Since _next_update is bigger than period this is at least 1.
+            self.frame += int(self._next_update/self._period)
+            # Time that already has passed since last update.
+            self._next_update %= self._period
+            # Limit the frame to the length of the image list.
+            self.frame %= len(self.images[self.movement_index])
+
+            # Handle the different sprites for animation here
+            self.animate()
+
+        # @todo: Not time based yet
         # Update x, y position of the rect for drawing only
         self.rect.centerx = round(self.rect.centerx + self.game.dx)
         self.rect.centery = round(self.rect.centery + self.game.dy)
 
         self.rotate(math.pi/3)
-
-        # Handle the different sprites for animation here
-        self.animate()
 
     def move(self):
         pass
@@ -109,7 +112,7 @@ class Enemy(pg.sprite.Sprite):
         :param angle: Rotation angle
         """
         self.image = pg.transform.rotate(
-            self.images[self.movement_index][self.image_index],
+            self.images[self.movement_index][self.frame],
             (-1 * _angle * (180 / math.pi)))
         # Recreating mask after every rotation
         self.mask = pg.mask.from_surface(self.image)
@@ -125,16 +128,4 @@ class Enemy(pg.sprite.Sprite):
         pass
 
     def animate(self):
-        def _switch_animation():
-            self.animation_counter = 0
-            if ((self.image_index + 1)
-                    < len(self.images[self.movement_index])):
-                self.image_index += 1
-            else:
-                self.image_index = 0
-
-        if (self.animation_counter
-                >= self.movement_states[self.movement_index]['speed']):
-            _switch_animation()
-        else:
-            self.animation_counter += 1
+        pass

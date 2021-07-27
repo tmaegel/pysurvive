@@ -11,30 +11,15 @@ from config import (
     FPS,
     COLORKEY,
     BLACK,
-    GRAY_LIGHT,
     YELLOW,
+    RED_LIGHT,
     SCREEN_RECT,
 )
+from class_toolchain import Screen
 from navmesh import NavMesh
 from room import Room, Box
 from player import Player
 from enemy import Enemy
-
-
-class Screen(pg.sprite.Sprite):
-
-    """
-    Simple screen class to detect wheather objects
-    are visible on the screen.
-    """
-
-    def __init__(self, _size):
-        pg.sprite.Sprite.__init__(self)
-
-        self.image = pg.Surface(_size)
-        self.rect = self.image.get_rect()
-        self.rect.x = 0
-        self.rect.y = 0
 
 
 class Game():
@@ -44,12 +29,15 @@ class Game():
     def __init__(self):
         pg.init()
 
+        self.clock = pg.time.Clock()
         # Set the height and width of the screen
         self.screen = pg.display.set_mode(SCREEN_RECT.size)
         # Set the window title
         pg.display.set_caption('pysurvive')
         # Turn off the mouse cursor
         pg.mouse.set_visible(0)
+
+        self.fps_font = pg.font.SysFont("Arial", 14)
 
         # Prepare the shadow surface / screeb
         self.screen_shadow = pg.Surface(self.screen.get_size())
@@ -125,8 +113,12 @@ class Game():
         """
 
         # Main loop
-        clock = pg.time.Clock()
         while self.running:
+
+            # The number of milliseconds that passed between the
+            # previous two calls to Clock.tick().
+            dt = self.clock.get_time()
+
             for event in pg.event.get():
                 if event.type == QUIT:
                     self.running = False
@@ -166,9 +158,9 @@ class Game():
             # Updating
             #
 
-            self.player_sprites.update([direction_x, direction_y])
+            self.player_sprites.update([direction_x, direction_y], dt)
             # @todo: Update not all objects later
-            self.enemy_sprites.update()
+            self.enemy_sprites.update(dt)
             self.room_sprites.update(self.dx, self.dy)
             self.block_sprites.update(self.dx, self.dy)
 
@@ -178,7 +170,8 @@ class Game():
 
             self.room_render_sprites.draw(self.screen)
 
-            # @todo: Do not use alle wall objects to render/calculate the shadow
+            # @todo: Do not use alle wall objects to
+            # render/calculate the shadow
             self.screen_shadow.fill(BLACK)
             self.player.light.draw(self.screen_shadow)
             self.screen.blit(self.screen_shadow, (0, 0))
@@ -211,18 +204,19 @@ class Game():
                                    (node.position[0] - self.x,
                                     node.position[1] - self.y), 2)
 
-            self.path = self.navmesh.get_astar_path((1185, 400),
-                                                    (self.player.get_x(), self.player.get_y()))
+            self.path = self.navmesh.get_astar_path(
+                (1185, 400), (self.player.get_x(), self.player.get_y()))
             self.path = [(p[0] - self.x, p[1] - self.y) for p in self.path]
 
             if self.path:
                 pg.draw.lines(self.screen, (0, 0, 255), False, self.path)
 
+            self.screen.blit(self.update_fps(), (5, 5))
             # Go ahead and update the screen with what we've drawn.
             # This MUST happen after all the other drawing commands.
             pg.display.flip()
             # This limits the while loop to a max of FPS times per second.
-            clock.tick(FPS)
+            self.clock.tick(FPS)
 
     def set_offset(self, _dx, _dy):
         self.dx = _dx
@@ -232,6 +226,11 @@ class Game():
 
     def get_offset(self):
         return (self.x, self.y)
+
+    def update_fps(self):
+        fps = str(int(self.clock.get_fps()))
+        fps_text = self.fps_font.render(fps, 1, RED_LIGHT)
+        return fps_text
 
 
 if __name__ == '__main__':

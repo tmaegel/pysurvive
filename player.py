@@ -9,69 +9,48 @@ from config import (
     GRAY_LIGHT,
 )
 from utils import load_image, load_sound
-from class_toolchain import Ray
+from class_toolchain import Ray, Animation
 from flashlight import Flashlight
 
 
-class Player(pg.sprite.Sprite):
+class Player(Animation):
 
     speed = 6
 
-    # Contains the scaled images
-    images = []
-
     # Define the single movement states.
     # Each movement state is represented by a dictionary.
-    # The speed attribute descripe the animation speed.
-    # The next animation will be showed if the counter reach
-    # the speed number.
-    animation_counter = 0
-    image_index = 0
     movement_index = 0
-    movement_states = [
+    movements = [
         {
             'name': 'idle',
-            'speed': 1,
-            'length': 20,
         },
         {
             'name': 'move',
-            'speed': 1,
-            'length': 20,
         },
         {
             'name': 'meleeattack',
-            'speed': 1,
-            'length': 15,
         },
         {
             'name': 'shoot',
-            'speed': 0,
-            'length': 3,
         },
         {
             'name': 'reload',
-            'speed': 1,
-            'length': 15,
         },
     ]
     weapon_index = 1
-    weapon_status = [
+    weapons = [
         'knife',
         'handgun',
         'rifle',
         'shotgun',
     ]
 
+    feets = None
     light = None
     bullet = None
 
-    shooting = False
-    reloading = False
-
     def __init__(self, _game, _x, _y):
-        # call Sprite initializer
-        pg.sprite.Sprite.__init__(self)
+        Animation.__init__(self)
         # Reference to the game object
         self.game = _game
         # Real position of the player in the game world
@@ -79,10 +58,10 @@ class Player(pg.sprite.Sprite):
         self.y = _y
 
         # Preloading images
-        for movement in self.movement_states:
+        for movement in self.movements:
             _images = []
             directory = IMAGE_DIR + 'player/' + \
-                self.weapon_status[self.weapon_index] + \
+                self.weapons[self.weapon_index] + \
                 '/' + movement['name'] + '/'
             if os.path.isdir(directory):
                 path, _, files = next(os.walk(directory))
@@ -101,8 +80,7 @@ class Player(pg.sprite.Sprite):
         self.sound_shot = load_sound('shot/pistol.wav')
         self.sound_reload = load_sound('reload/pistol.wav')
 
-        self.image = self.images[self.movement_index][
-            self.image_index]
+        self.image = self.images[self.movement_index][0]
         self.mask = pg.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         # Virtual position the image at the center of the screen
@@ -114,12 +92,27 @@ class Player(pg.sprite.Sprite):
         # The initial coordinates are used for drawing only.
         self.light = Flashlight(self, self.get_x(), self.get_y())
 
-    def update(self, _direction):
+    def update(self, _direction, _dt):
         """
         Update the player object.
-        This is the crank to all other function calls.
         """
 
+        # Accumulate time since last update.
+        self._next_update += _dt
+        # If more time has passed as a period, then we need to update.
+        if self._next_update >= self._period:
+            # Skipping frames if too much time has passed.
+            # Since _next_update is bigger than period this is at least 1.
+            self.frame += int(self._next_update/self._period)
+            # Time that already has passed since last update.
+            self._next_update %= self._period
+            # Limit the frame to the length of the image list.
+            self.frame %= len(self.images[self.movement_index])
+
+            # Handle the different sprites for animation here
+            self.animate(_direction)
+
+        # @todo: Not time based yet
         # Check for collision before
         # Allow moving only if there is no collision detected
         if not self.collide_by_move(_direction, self.speed):
@@ -129,31 +122,8 @@ class Player(pg.sprite.Sprite):
         if not self.collide_by_rotation(self.get_weapon_angle()):
             self.rotate(self.get_weapon_angle())
 
-        # Handle the different sprites for animation here
-        self.animate(_direction)
-
         # Update flashlight of player
         self.light.update(self.get_x(), self.get_y())
-
-    def shot(self):
-        # Set shot movement
-        self.shooting = True
-        self.image_index = 0
-        self.movement_index = 3
-        self.sound_shot.play()
-
-        # Create bullet object
-        self.bullet = Bullet(self.get_weapon_x(),
-                             self.get_weapon_y(), self.get_weapon_angle())
-        self.bullet.intersect = self.bullet.get_intersection(
-            self.game.block_sprites.sprites())
-
-    def reload(self):
-        # Set reload movement
-        self.reloading = True
-        self.image_index = 0
-        self.movement_index = 4
-        self.sound_reload.play()
 
     def move(self, _direction, _speed):
         """
@@ -167,20 +137,6 @@ class Player(pg.sprite.Sprite):
         self.x = round(self.x - self.game.dx)
         self.y = round(self.y - self.game.dy)
 
-        if self.feets:
-            self.feets.move(_direction)
-
-    def _get_move_vector(self, _direction, _speed):
-        # If the player moves diagonal add only the
-        # half of the speed in each direction.
-        if _direction[0] != 0 and _direction[1] != 0:
-            # Based on the 45° angle
-            return (-1 * _direction[0] * abs(math.cos(math.pi/4)) * _speed,
-                    -1 * _direction[1] * abs(math.sin(math.pi/4)) * _speed)
-        else:
-            return (-1 * _direction[0] * _speed,
-                    -1 * _direction[1] * _speed)
-
     def rotate(self, _angle):
         """
         Rotate the player object on the center.
@@ -190,7 +146,7 @@ class Player(pg.sprite.Sprite):
         :param angle: Rotation angle
         """
         self.image = pg.transform.rotate(
-            self.images[self.movement_index][self.image_index],
+            self.images[self.movement_index][self.frame],
             (-1 * _angle * (180 / math.pi)))
         # Recreating mask after every rotation
         self.mask = pg.mask.from_surface(self.image)
@@ -203,38 +159,21 @@ class Player(pg.sprite.Sprite):
         self.rect.center = (x, y)
 
     def animate(self, _direction):
-        def _switch_animation():
-            self.animation_counter = 0
-            if ((self.image_index + 1)
-                    < len(self.images[self.movement_index])):
-                self.image_index += 1
-            else:
-                # Animation is finished
-                self.image_index = 0
-                # If idle
-                if self.movement_index == 0:
-                    pass
-                # If move
-                elif self.movement_index == 1:
-                    pass
-                # If attacking
-                elif self.movement_index == 2:
-                    pass
-                # If shooting
-                elif self.movement_index == 3:
-                    # rest movement after shooting
-                    self.movement_index = 0
-                    self.shooting = False
-                    # If shot is finished, delete bullet object
-                    del self.bullet
-                # If reloading
-                elif self.movement_index == 4:
-                    # reset movement after reloading
-                    self.movement_index = 0
-                    self.reloading = False
+        if self.frame == len(self.images[self.movement_index]) - 1:
+            # Rest movement after attacking, shooting or reloading.
+            # If attacking
+            if self.movement_index == 2:
+                self.movement_index = 0
+            # If shooting
+            elif self.movement_index == 3:
+                self.movement_index = 0
+                del self.bullet
+            # If reloading
+            elif self.movement_index == 4:
+                self.movement_index = 0
 
-        # Increase the image_index if there is a movement only
-        if not self.shooting and not self.reloading:
+        # If not attacking, shooting and reloading
+        if self.movement_index == 0 or self.movement_index == 1:
             if _direction[0] != 0 or _direction[1] != 0:
                 # Move state
                 self.movement_index = 1
@@ -242,13 +181,25 @@ class Player(pg.sprite.Sprite):
                 # Idle state
                 self.movement_index = 0
 
-        if (self.animation_counter
-                >= self.movement_states[self.movement_index]['speed']):
-            _switch_animation()
-        else:
-            self.animation_counter += 1
+    def shot(self):
+        # Set shot movement
+        self.shooting = True
+        self.frame = 0
+        self.movement_index = 3
+        self.sound_shot.play()
 
-        # self.feets.move(direction)
+        # Create bullet object
+        self.bullet = Bullet(self.get_weapon_x(),
+                             self.get_weapon_y(), self.get_weapon_angle())
+        self.bullet.intersect = self.bullet.get_intersection(
+            self.game.block_sprites.sprites())
+
+    def reload(self):
+        # Set reload movement
+        self.reloading = True
+        self.frame = 0
+        self.movement_index = 4
+        self.sound_reload.play()
 
     def collide_by_move(self, _direction, _speed):
         """
@@ -323,6 +274,17 @@ class Player(pg.sprite.Sprite):
             collided=pg.sprite.collide_rect)
 
         return block_hit_list
+
+    def _get_move_vector(self, _direction, _speed):
+        # If the player moves diagonal add only the
+        # half of the speed in each direction.
+        if _direction[0] != 0 and _direction[1] != 0:
+            # Based on the 45° angle
+            return (-1 * _direction[0] * abs(math.cos(math.pi/4)) * _speed,
+                    -1 * _direction[1] * abs(math.sin(math.pi/4)) * _speed)
+        else:
+            return (-1 * _direction[0] * _speed,
+                    -1 * _direction[1] * _speed)
 
     def get_x(self):
         """
@@ -417,7 +379,7 @@ class Player(pg.sprite.Sprite):
                      + math.sin(_angle) * _offset2)
 
 
-class PlayerFeet(pg.sprite.Sprite):
+class PlayerFeet(Animation):
 
     """
     A player subclass to hold the feet images / states of the player.
@@ -426,12 +388,8 @@ class PlayerFeet(pg.sprite.Sprite):
     # @workaroung: offset (20) for rifle, shutgun and knife
     feet_offset_px = 10
 
-    # Contains the scaled images
-    images = []
-
-    image_index = 0
     feet_index = 0
-    feet_states = [
+    feets = [
         'idle',
         'walk',
         'walk_left',
@@ -440,11 +398,10 @@ class PlayerFeet(pg.sprite.Sprite):
     ]
 
     def __init__(self, _player):
-        # call Sprite initializer
-        pg.sprite.Sprite.__init__(self)
+        Animation.__init__(self)
         self.player = _player
 
-        for feet in self.feet_states:
+        for feet in self.feets:
             _images = []
             directory = IMAGE_DIR + 'player/feet/' + feet + '/'
             if os.path.isdir(directory):
@@ -460,7 +417,7 @@ class PlayerFeet(pg.sprite.Sprite):
             else:
                 print('warn: Directory ' + directory + ' doesnt exists.')
 
-        self.image = self.images[self.feet_index][self.image_index]
+        self.image = self.images[self.feet_index][self.frame]
         self.rect = self.image.get_rect()
         self.rect.center = (
             round(self.player.get_virt_x()
@@ -475,7 +432,32 @@ class PlayerFeet(pg.sprite.Sprite):
                   * self.feet_offset_px//2)
         )
 
-    def move(self, direction):
+    def update(self, _direction, _dt):
+        """
+        Update the player feets object.
+        """
+
+        # Accumulate time since last update.
+        self._next_update += _dt
+        # If more time has passed as a period, then we need to update.
+        if self._next_update >= self._period:
+            # Skipping frames if too much time has passed.
+            # Since _next_update is bigger than period this is at least 1.
+            self.frame += int(self._next_update/self._period)
+            # Time that already has passed since last update.
+            self._next_update %= self._period
+            # Limit the frame to the length of the image list.
+            self.frame %= len(self.images[self.feet_index])
+
+        # @todo: Not time based yet
+        self.move(_direction)
+        self.rotate()
+
+    def move(self, _direction):
+        """
+        Move the player feets in the specific direction.
+        """
+
         self.rect.center = (
             self.player.get_virt_x(),
             self.player.get_virt_y())
@@ -491,10 +473,28 @@ class PlayerFeet(pg.sprite.Sprite):
                   - math.sin(self.player.get_weapon_angle() - math.pi/2)
                   * self.feet_offset_px//2)
         )
+
+        self.rect.move_ip(*[d * self.player.speed for d in _direction])
+
+        if _direction[0] != 0 or _direction[1] != 0:
+            # Move state
+            self.feet_index = 1
+        elif _direction[0] == 0 and _direction[1] == 0:
+            # Idle state
+            self.frame = 0
+            self.feet_index = 0
+
+    def rotate(self):
+        """
+        Rotate the player feets object on the center.
+        Need to negate the result, if the image starts
+        at the wrong direction.
+        """
+
         # Need to negate the result, if the image starts
         # at the wrong direction.
         self.image = pg.transform.rotate(
-            self.images[self.feet_index][self.image_index],
+            self.images[self.feet_index][self.frame],
             (-1 * self.player.get_weapon_angle() * (180 / math.pi)))
         # Keep the image on the same position.
         # Save its current center.
@@ -503,30 +503,6 @@ class PlayerFeet(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         # Put the new rect's center at old center.
         self.rect.center = (x, y)
-
-        self.rect.move_ip(*[d * self.player.speed for d in direction])
-
-        # Increase the image_index if there is a movement only
-        if direction[0] != 0 or direction[1] != 0:
-            # Move state
-            # if direction[0] < 0 and direction[1] == 0:
-            #     # walk left state
-            #     self.feet_index = 2
-            # elif direction[0] > 0 and direction[1] == 0:
-            #     # walk right state
-            #     self.feet_index = 3
-            # else:
-            self.feet_index = 1
-
-            if ((self.image_index + 1)
-                    < len(self.images[self.feet_index])):
-                self.image_index += 1
-            else:
-                self.image_index = 0
-        elif direction[0] == 0 and direction[1] == 0:
-            # Idle state
-            self.feet_index = 0
-            self.image_index = 0
 
 
 class Bullet(Ray):
