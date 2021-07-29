@@ -4,9 +4,9 @@ import triangle as tr
 class NavMesh():
 
     """
-    This NavMesh class create a navmesh (division of the
-    walkable game world into triangles).
-    Based on this navmesh AI can find paths through the
+    This NavMesh class creates a navmesh (division of the
+    walkable areas of game world into triangles).
+    Based on this navmesh the AI can find paths through the
     game world to the destination (e.g. player).
     """
 
@@ -16,32 +16,39 @@ class NavMesh():
         self.game = _game
         self.mesh = self._init_navmesh()
 
-    def _init_navmesh(self, _offset=15):
+    def _init_navmesh(self):
         doors = []
+        # 2d array that stores the xy position of each vertex.
         vertices = []
+        # 2d array that stores segments.
+        # segments are edges whose presence in the triangulation
+        # is enforced. Each segment is specified by listing the
+        # indices of its two endpoints.
         segments = []
         holes = []
 
         def make_box(x, y, w, h):
-            i = len(vertices)
-            # 2d array that stores the xy position of each vertex.
-            vertices.extend([[x, y],
-                             [x + w, y],
-                             [x + w, y + h],
-                             [x, y + h]])
-            # 2d array that stores segments.
-            # egments are edges whose presence in the triangulation
-            # is enforced. Each segment is specified by listing the
-            # indices of its two endpoints.
-            segments.extend([(i+0, i+1),
-                             (i+1, i+2),
-                             (i+2, i+3),
-                             (i+3, i+0)])
+            _segments = [
+                ((x, y), (x + w, y)),
+                ((x + w, y), (x + w, y + h)),
+                ((x + w, y + h), (x, y + h)),
+                ((x, y + h), (x, y)),
+            ]
+            for _seg in _segments:
+                _p1 = _seg[0]
+                _p2 = _seg[1]
+                if _p1 not in vertices:
+                    vertices.append(_p1)
+                if _p2 not in vertices:
+                    vertices.append(_p2)
+                _p1_i = vertices.index(_p1)
+                _p2_i = vertices.index(_p2)
+                segments.append((_p1_i, _p2_i))
 
-        # Add rooms with offset (exlude walls at the sides) from navmesh.
+        # Add rooms.
         for room in self.game.room_sprites.sprites():
-            make_box(room.x + _offset, room.y + _offset,
-                     room.width - _offset * 2, room.height - _offset * 2)
+            make_box(room.x, room.y,
+                     room.width, room.height)
             # Extract the doors of each room.
             # Do not append duplicates.
             for door in room.get_door():
@@ -52,13 +59,9 @@ class NavMesh():
         for door in doors:
             make_box(door.x, door.y, door.width, door.height)
 
-        # for block in self.block_sprites.sprites():
-        #     make_box(block.x + _offset, block.y + _offset,
-        #              block.width - _offset * 2, block.height - _offset * 2)
-
-        block = self.game.block_sprites.sprites()[-1]
-        make_box(block.x, block.y, block.width, block.height)
-        holes.append(block.get_center())
+        for block in self.game.block_sprites.sprites():
+            make_box(block.x, block.y, block.width, block.height)
+            holes.append(block.get_center())
 
         A = dict(vertices=vertices, segments=segments, holes=holes)
         B = tr.triangulate(A, 'pA')
@@ -94,6 +97,12 @@ class NavMesh():
         Returns a list of tuples as a path from the given start
         to the given end point.
         """
+
+        # @Workaround: Resetting parent variable.
+        # @todo: Make a copy of the triangle/node list.
+        for triangle in self.mesh:
+            for node in triangle.nodes:
+                node.parent = None
 
         # Find the triangles of start and end position and get
         # the first node of this triangle as starting point.
