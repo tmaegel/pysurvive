@@ -7,12 +7,11 @@ from config import (
 )
 from utils import load_image
 from class_toolchain import Animation
-from spritesheet import Spritesheet
 
 
 class Enemy(Animation):
 
-    speed = 4
+    speed = 2
 
     # Define the single movement states.
     # Each movement state is represented by a dictionary.
@@ -31,11 +30,13 @@ class Enemy(Animation):
 
     def __init__(self, _game, _x, _y):
         Animation.__init__(self)
-        # Reference to the game object
+        # Reference to the game instance.
         self.game = _game
-        # Real position of the room in the game world
         self.x = _x
         self.y = _y
+        self.angle = math.pi
+
+        self.path = None
 
         # for movement in self.movements:
         #     _images = []
@@ -70,10 +71,11 @@ class Enemy(Animation):
         self.mask = pg.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
 
-        self.rect.centerx = self.x - self.game.x
-        self.rect.centery = self.y - self.game.y
+        _offset = self.game.get_offset()
+        self.rect.centerx = self.x - _offset[0]
+        self.rect.centery = self.y - _offset[1]
 
-    def update(self, _dt):
+    def update(self, _dt, _offset):
         """
         Update the enemy object.
         """
@@ -94,14 +96,27 @@ class Enemy(Animation):
             self.animate()
 
         # @todo: Not time based yet
-        # Update x, y position of the rect for drawing only
-        self.rect.centerx = round(self.rect.centerx + self.game.dx)
-        self.rect.centery = round(self.rect.centery + self.game.dy)
+        # Update the position of the sprite.
+        self.rect.centerx = round(self.x - _offset[0])
+        self.rect.centery = round(self.y - _offset[1])
 
-        self.rotate(math.pi/3)
+        # self.move()
+        self.rotate(self.angle)
 
     def move(self):
-        pass
+        # Get the path to the player position.
+        self.path = self.game.navmesh.get_astar_path(
+            (self.x, self.y), (self.game.get_player_pos()))
+
+        self.movement_index = 1
+        # Get the move vector based in the angle
+        _dx, _dy = self._get_move_vector(self.angle, self.speed)
+        # Add the vector to the real position in the game world.
+        self.x = round(self.x + _dx)
+        self.y = round(self.y + _dy)
+        # Update the position of the sprite for drawing.
+        self.rect.centerx = round(self.rect.centerx + _dx)
+        self.rect.centery = round(self.rect.centery + _dy)
 
     def rotate(self, _angle):
         """
@@ -129,3 +144,7 @@ class Enemy(Animation):
 
     def animate(self):
         pass
+
+    def _get_move_vector(self, _angle, _speed):
+        return (math.cos(_angle) * _speed,
+                math.sin(_angle) * _speed)

@@ -92,7 +92,7 @@ class Player(Animation):
         # The initial coordinates are used for drawing only.
         self.light = Flashlight(self, self.get_x(), self.get_y())
 
-    def update(self, _direction, _dt):
+    def update(self, _dt, _direction):
         """
         Update the player object.
         """
@@ -134,8 +134,8 @@ class Player(Animation):
         self.game.set_offset(_dx, _dy)
 
         # Add the negate value of dx and dy to the player position
-        self.x = round(self.x - self.game.dx)
-        self.y = round(self.y - self.game.dy)
+        self.x = round(self.x - _dx)
+        self.y = round(self.y - _dy)
 
     def rotate(self, _angle):
         """
@@ -167,7 +167,7 @@ class Player(Animation):
             # If shooting
             elif self.movement_index == 3:
                 self.movement_index = 0
-                del self.bullet
+                # del self.bullet
             # If reloading
             elif self.movement_index == 4:
                 self.movement_index = 0
@@ -432,7 +432,7 @@ class PlayerFeet(Animation):
                   * self.feet_offset_px//2)
         )
 
-    def update(self, _direction, _dt):
+    def update(self, _dt, _direction):
         """
         Update the player feets object.
         """

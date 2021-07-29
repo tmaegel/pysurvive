@@ -28,13 +28,13 @@ class Screen(pg.sprite.Sprite):
     are visible on the screen.
     """
 
-    def __init__(self, _size):
+    def __init__(self, _x, _y, _size):
         pg.sprite.Sprite.__init__(self)
 
         self.image = pg.Surface(_size)
         self.rect = self.image.get_rect()
-        self.rect.x = 0
-        self.rect.y = 0
+        self.rect.x = _x
+        self.rect.y = _y
 
 
 class Block(pg.sprite.Sprite):
@@ -52,7 +52,7 @@ class Block(pg.sprite.Sprite):
             self.x2 = _x2
             self.y2 = _y2
 
-    def __init__(self, _x, _y, _width, _height, _xoffset, _yoffset):
+    def __init__(self, _x, _y, _width, _height, _offset):
         pg.sprite.Sprite.__init__(self)
         self.x = _x
         self.y = _y
@@ -66,8 +66,8 @@ class Block(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
 
         # Set the initial position for drawing only
-        self.rect.x = self.x - _xoffset
-        self.rect.y = self.y - _yoffset
+        self.rect.x = self.x - _offset[0]
+        self.rect.y = self.y - _offset[1]
 
         self.segments = []
         self.segments.append(
@@ -85,10 +85,10 @@ class Block(pg.sprite.Sprite):
             self.BlockSegment(self.x, self.y + self.height,
                               self.x, self.y))
 
-    def update(self, _dx, _dy):
+    def update(self, _offset):
         # Update x, y position of the rect for drawing only.
-        self.rect.x = round(self.rect.x + _dx)
-        self.rect.y = round(self.rect.y + _dy)
+        self.rect.x = round(self.x - _offset[0])
+        self.rect.y = round(self.y - _offset[1])
 
     def get_points(self):
         return ((self.x, self.y),
