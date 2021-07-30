@@ -10,7 +10,7 @@ class NavMesh():
     game world to the destination (e.g. player).
     """
 
-    mesh = []
+    mesh = []  # type: ignore
 
     def __init__(self, _game):
         self.game = _game
@@ -82,14 +82,14 @@ class NavMesh():
 
         return mesh
 
-    def _get_triangle_of_point(self, point):
+    def _get_triangle_of_point(self, _mesh, _point):
         """
         Returns the triagle (navmesh section) in which
         the point is located.
         """
 
-        for triangle in self.mesh:
-            if triangle.is_point_in_triangle(point):
+        for triangle in _mesh:
+            if triangle.is_point_in_triangle(_point):
                 return triangle
 
     def get_astar_path(self, start, end):
@@ -98,18 +98,15 @@ class NavMesh():
         to the given end point.
         """
 
-        # @Workaround: Resetting parent variable.
-        # @todo: Make a copy of the triangle/node list.
-        for triangle in self.mesh:
-            for node in triangle.nodes:
-                node.parent = None
-
         # Find the triangles of start and end position and get
         # the first node of this triangle as starting point.
-        start_tri = self._get_triangle_of_point(start)
-        end_tri = self._get_triangle_of_point(end)
+        start_tri = self._get_triangle_of_point(self.mesh, start)
+        end_tri = self._get_triangle_of_point(self.mesh, end)
         start_node = start_tri.nodes[0]
         end_node = end_tri.nodes[0]
+        # Reset the start and end node.
+        start_node.reset()
+        end_node.reset()
 
         path = []
         open_list = []
@@ -131,19 +128,15 @@ class NavMesh():
             while len(open_list) > 0:
                 # Get the current node
                 current_node = open_list[0]
-                current_index = 0
 
                 # To continue the search, simply choose the lowest F
                 # score from all those that are on the open list.
-                for index, item in enumerate(open_list):
-                    if item.f < current_node.f:
-                        current_node = item
-                        current_index = index
+                current_node = min(open_list)
 
                 # Drop the starting node from the open list,
                 # and add it to a closed list. We don't need
                 # to look at again for now.
-                open_list.pop(current_index)
+                open_list.remove(current_node)
                 closed_list.append(current_node)
 
                 # Found the goal
@@ -160,8 +153,7 @@ class NavMesh():
                 # the current node.
                 children = []
                 for neighbor in current_node.triangle.neighbors:
-                    for node in neighbor.nodes:
-                        children.append(node)
+                    children += neighbor.nodes
 
                 for node in children:
                     # Node is on the closed list
@@ -216,8 +208,14 @@ class Node():
         # F is the total cost of the node.
         self.f = 0
 
+    def reset(self):
+        self.parent = None
+
     def __eq__(self, other):
         return self.position == other.position
+
+    def __lt__(self, other):
+        return self.f < other.f
 
 
 class Triangle():
