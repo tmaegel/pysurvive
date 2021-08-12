@@ -37,30 +37,40 @@ class Screen(pg.sprite.Sprite):
         self.rect.y = _y
 
 
+class LineSegment():
+
+    """
+    Simple helper class to wrap all line segments (sides / line element)
+    of the block. So each block has 4 line segments.
+    """
+
+    def __init__(self, _x1, _y1, _x2, _y2):
+        self.x1 = _x1
+        self.y1 = _y1
+        self.x2 = _x2
+        self.y2 = _y2
+
+    def get_points(self):
+        return ((self.x1, self.y1), (self.x2, self.y2))
+
+
 class Block(pg.sprite.Sprite):
 
-    class BlockSegment():
+    """
+    Simple helper class to wrap a block elments with x, y
+    coordinates and width, height.
+    """
 
-        """
-        Simple helper class to wrap all block segments (sides / line element)
-        of the block (rectangle). So each block has 4 wall segments.
-        """
-
-        def __init__(self, _x1, _y1, _x2, _y2):
-            self.x1 = _x1
-            self.y1 = _y1
-            self.x2 = _x2
-            self.y2 = _y2
-
-    def __init__(self, _x, _y, _width, _height, _offset):
+    def __init__(self, _x, _y, _width, _height, _offset,
+                 _sides=('top', 'right', 'bottom', 'left')):
         pg.sprite.Sprite.__init__(self)
         self.x = _x
         self.y = _y
         self.width = _width
         self.height = _height
+        self.sides = _sides
 
         self.image = pg.Surface([self.width, self.height])
-        self.image.fill((0, 0, 0))
         self.mask = pg.mask.from_surface(self.image)
         self.mask.fill()
         self.rect = self.image.get_rect()
@@ -69,32 +79,37 @@ class Block(pg.sprite.Sprite):
         self.rect.x = self.x - _offset[0]
         self.rect.y = self.y - _offset[1]
 
+        # Add LineSegments (sides) of the block.
         self.segments = []
-        self.segments.append(
-            self.BlockSegment(self.x, self.y,
-                              self.x + self.width, self.y))
-        self.segments.append(
-            self.BlockSegment(self.x + self.width,
-                              self.y, self.x + self.width,
-                              self.y + self.height))
-        self.segments.append(
-            self.BlockSegment(self.x + self.width,
-                              self.y + self.height, self.x,
-                              self.y + self.height))
-        self.segments.append(
-            self.BlockSegment(self.x, self.y + self.height,
-                              self.x, self.y))
+        if 'top' in self.sides:
+            self.segments.append(
+                LineSegment(self.x, self.y,
+                            self.x + self.width, self.y))
+        if 'right' in self.sides:
+            self.segments.append(
+                LineSegment(self.x + self.width, self.y,
+                            self.x + self.width, self.y + self.height))
+        if 'bottom' in self.sides:
+            self.segments.append(
+                LineSegment(self.x, self.y + self.height,
+                            self.x + self.width, self.y + self.height))
+        if 'left' in self.sides:
+            self.segments.append(
+                LineSegment(self.x, self.y, self.x,
+                            self.y + self.height))
 
-    def update(self, _offset):
+        # Points of the drawed line segments.
+        self.points = ()
+        for seg in self.segments:
+            self.points += seg.get_points()
+
+    def update(self, offset):
         # Update x, y position of the rect for drawing only.
-        self.rect.x = round(self.x - _offset[0])
-        self.rect.y = round(self.y - _offset[1])
+        self.rect.x = round(self.x - offset[0])
+        self.rect.y = round(self.y - offset[1])
 
     def get_points(self):
-        return ((self.x, self.y),
-                (self.x + self.width, self.y),
-                (self.x + self.width, self.y + self.height),
-                (self.x, self.y + self.height))
+        return self.points
 
     def get_center(self):
         return [self.x + self.width//2, self.y + self.height//2]
@@ -115,7 +130,7 @@ class Ray():
         self.x_dir = self.x0 + math.cos(self.angle)
         self.y_dir = self.y0 + math.sin(self.angle)
 
-    def get_intersection(self, _walls, _closest=True):
+    def get_intersection(self, walls, closest=True):
         """
         Return the intersection of this ray and all wall segments.
 
@@ -128,12 +143,12 @@ class Ray():
         """
 
         result_intersect = None
-        for wall in _walls:
+        for wall in walls:
             for segment in wall.segments:
                 intersect = self.calc_intersection(segment)
                 if not intersect:
                     continue
-                if _closest:
+                if closest:
                     if (not result_intersect or
                             intersect['param'] < result_intersect['param']):
                         result_intersect = intersect
@@ -144,7 +159,7 @@ class Ray():
 
         return result_intersect
 
-    def calc_intersection(self, _segment):
+    def calc_intersection(self, segment):
         """
         Calculate the intersection with line segment and this ray.
 
@@ -158,8 +173,8 @@ class Ray():
         dx = self.x_dir - self.x0
         dy = self.y_dir - self.y0
         # segment in parametric: point + direction * T1
-        segment_dx = _segment.x2 - _segment.x1
-        segment_dy = _segment.y2 - _segment.y1
+        segment_dx = segment.x2 - segment.x1
+        segment_dy = segment.y2 - segment.y1
 
         # Check if they are. If so, no intersect
         ray_mag = math.sqrt(dx * dx + dy * dy)
@@ -184,10 +199,10 @@ class Ray():
         #           + ray_dy * (ray.x1 - segment.x1)) /
         #          (segment_dx * ray_dy - segment_dy * ray_dx)
         try:
-            T2 = ((dx * (_segment.y1 - self.y0) +
-                   dy * (self.x0 - _segment.x1)) /
+            T2 = ((dx * (segment.y1 - self.y0) +
+                   dy * (self.x0 - segment.x1)) /
                   (segment_dx * dy - segment_dy * dx))
-            T1 = (_segment.x1 + segment_dx * T2 - self.x0) / dx
+            T1 = (segment.x1 + segment_dx * T2 - self.x0) / dx
         except ZeroDivisionError:
             # print("warn: division by zero")
             return None

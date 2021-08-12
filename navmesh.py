@@ -82,14 +82,14 @@ class NavMesh():
 
         return mesh
 
-    def _get_triangle_of_point(self, _mesh, _point):
+    def _get_triangle_of_point(self, mesh, point):
         """
         Returns the triagle (navmesh section) in which
         the point is located.
         """
 
-        for triangle in _mesh:
-            if triangle.is_point_in_triangle(_point):
+        for triangle in mesh:
+            if triangle.is_point_in_triangle(point):
                 return triangle
 
     def get_astar_path(self, start, end):
@@ -284,31 +284,31 @@ class Triangle():
 
         return nodes
 
-    def _remove_invalid_nodes(self, _nodes):
+    def _remove_invalid_nodes(self, nodes):
         """
         Remove all nodes on the side that are adjacent
         to an obstacle. If a node is shared by two
         triangle, this is a valid node.
         """
 
-        nodes = []
+        valid_nodes = []
         for node in self.nodes:
-            for n in _nodes:
+            for n in nodes:
                 if self is not n:
                     if node in n.nodes:
-                        nodes.append(node)
+                        valid_nodes.append(node)
                         break
         # Overwrite the nodes
-        self.nodes = nodes
+        self.nodes = valid_nodes
 
-    def find_neighbors(self, _nodes):
+    def find_neighbors(self, nodes):
         """
         Find all neighbor triangles.
         A neighbor is a triangle with 2 common points.
         """
 
         # Find neighbors
-        for node in _nodes:
+        for node in nodes:
             common_points = 0
             if self is not node:
                 for p in self.triangle:
@@ -318,9 +318,9 @@ class Triangle():
                         if node not in self.neighbors:
                             self.neighbors.append(node)
 
-        self._remove_invalid_nodes(_nodes)
+        self._remove_invalid_nodes(nodes)
 
-    def is_point_in_triangle(self, _point):
+    def is_point_in_triangle(self, point):
         """
         Returns True if the point is inside the triangle and returns False
         if it falls outside.
@@ -337,7 +337,7 @@ class Triangle():
         on the same side for each of the triangle's segments.
         """
         # Unpack arguments
-        x, y = _point
+        x, y = point
         ax, ay = self.triangle[0]
         bx, by = self.triangle[1]
         cx, cy = self.triangle[2]

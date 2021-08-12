@@ -5,7 +5,6 @@ import pygame as pg
 from config import (
     SCREEN_RECT,
     IMAGE_DIR,
-    YELLOW,
     GRAY_LIGHT,
 )
 from utils import load_image, load_sound
@@ -90,15 +89,15 @@ class Player(Animation):
         self.feets = PlayerFeet(self)
         # Initialize the light (flashlight) with x and y from player
         # The initial coordinates are used for drawing only.
-        self.light = Flashlight(self, self.get_x(), self.get_y())
+        # self.light = Flashlight(self, self.get_x(), self.get_y())
 
-    def update(self, _dt, _direction):
+    def update(self, dt, direction):
         """
         Update the player object.
         """
 
         # Accumulate time since last update.
-        self._next_update += _dt
+        self._next_update += dt
         # If more time has passed as a period, then we need to update.
         if self._next_update >= self._period:
             # Skipping frames if too much time has passed.
@@ -110,34 +109,34 @@ class Player(Animation):
             self.frame %= len(self.images[self.movement_index])
 
             # Handle the different sprites for animation here
-            self.animate(_direction)
+            self.animate(direction)
 
         # @todo: Not time based yet
         # Check for collision before
         # Allow moving only if there is no collision detected
-        if not self.collide_by_move(_direction, self.speed):
-            self.move(_direction, self.speed)
+        if not self.collide_by_move(direction, self.speed):
+            self.move(direction, self.speed)
 
         # Rotate the iamge
         if not self.collide_by_rotation(self.get_weapon_angle()):
             self.rotate(self.get_weapon_angle())
 
         # Update flashlight of player
-        self.light.update(self.get_x(), self.get_y())
+        # self.light.update(self.get_x(), self.get_y())
 
-    def move(self, _direction, _speed):
+    def move(self, direction, speed):
         """
         Move the player in the specific direction.
         """
 
-        _dx, _dy = self._get_move_vector(_direction, _speed)
-        self.game.set_offset(_dx, _dy)
+        dx, dy = self._get_move_vector(direction, speed)
+        self.game.set_offset(dx, dy)
 
         # Add the negate value of dx and dy to the player position
-        self.x = round(self.x - _dx)
-        self.y = round(self.y - _dy)
+        self.x = round(self.x - dx)
+        self.y = round(self.y - dy)
 
-    def rotate(self, _angle):
+    def rotate(self, angle):
         """
         Rotate the player object on the center.
         Need to negate the result, if the image starts
@@ -147,7 +146,7 @@ class Player(Animation):
         """
         self.image = pg.transform.rotate(
             self.images[self.movement_index][self.frame],
-            (-1 * _angle * (180 / math.pi)))
+            (-1 * angle * (180 / math.pi)))
         # Recreating mask after every rotation
         self.mask = pg.mask.from_surface(self.image)
         # Keep the image on the same position.
@@ -158,7 +157,7 @@ class Player(Animation):
         # Put the new rect's center at old center.
         self.rect.center = (x, y)
 
-    def animate(self, _direction):
+    def animate(self, direction):
         if self.frame == len(self.images[self.movement_index]) - 1:
             # Rest movement after attacking, shooting or reloading.
             # If attacking
@@ -174,10 +173,10 @@ class Player(Animation):
 
         # If not attacking, shooting and reloading
         if self.movement_index == 0 or self.movement_index == 1:
-            if _direction[0] != 0 or _direction[1] != 0:
+            if direction[0] != 0 or direction[1] != 0:
                 # Move state
                 self.movement_index = 1
-            elif _direction[0] == 0 and _direction[1] == 0:
+            elif direction[0] == 0 and direction[1] == 0:
                 # Idle state
                 self.movement_index = 0
 
@@ -201,7 +200,7 @@ class Player(Animation):
         self.movement_index = 4
         self.sound_reload.play()
 
-    def collide_by_move(self, _direction, _speed):
+    def collide_by_move(self, direction, speed):
         """
         First check a simple collisions detection (collide rect).
         Then check for a specific collision (mask) for a better collisions.
@@ -215,11 +214,11 @@ class Player(Animation):
         player_rect_y = self.get_virt_y()
 
         # Get the currect movement vector to simulate the movement
-        _dx, _dy = self._get_move_vector(_direction, _speed)
+        dx, dy = self._get_move_vector(direction, speed)
 
         # Simulate the movement by move the rect object
-        self.rect.centerx = round(self.rect.centerx - _dx)
-        self.rect.centery = round(self.rect.centery - _dy)
+        self.rect.centerx = round(self.rect.centerx - dx)
+        self.rect.centery = round(self.rect.centery - dy)
 
         collision = False
         for block in self._collide_by_rect():
@@ -235,7 +234,7 @@ class Player(Animation):
 
         return collision
 
-    def collide_by_rotation(self, _angle):
+    def collide_by_rotation(self, angle):
 
         # Backup the player image/mask
         player_image = self.image
@@ -253,7 +252,7 @@ class Player(Animation):
             self.rect.center = (x, y)
 
         # Simulate the rotation of the player
-        self.rotate(_angle)
+        self.rotate(angle)
 
         collision = False
         for block in self._collide_by_rect():
@@ -275,16 +274,16 @@ class Player(Animation):
 
         return block_hit_list
 
-    def _get_move_vector(self, _direction, _speed):
+    def _get_move_vector(self, direction, speed):
         # If the player moves diagonal add only the
         # half of the speed in each direction.
-        if _direction[0] != 0 and _direction[1] != 0:
+        if direction[0] != 0 and direction[1] != 0:
             # Based on the 45° angle
-            return (-1 * _direction[0] * abs(math.cos(math.pi/4)) * _speed,
-                    -1 * _direction[1] * abs(math.sin(math.pi/4)) * _speed)
+            return (-1 * direction[0] * abs(math.cos(math.pi/4)) * speed,
+                    -1 * direction[1] * abs(math.sin(math.pi/4)) * speed)
         else:
-            return (-1 * _direction[0] * _speed,
-                    -1 * _direction[1] * _speed)
+            return (-1 * direction[0] * speed,
+                    -1 * direction[1] * speed)
 
     def get_x(self):
         """
@@ -342,41 +341,41 @@ class Player(Animation):
             self.get_aim_x() - self.get_virt_weapon_x())
             + 2 * math.pi) % (2 * math.pi)
 
-    def get_weapon_x(self, _offset1=17, _offset2=40):
+    def get_weapon_x(self, offset1=17, offset2=40):
         """
         Get the real x coordinate of the weapon in the game world.
         """
-        _angle = self.get_angle()
+        angle = self.get_angle()
         return round(self.get_x()
-                     - math.cos(_angle - math.pi/2) * _offset1
-                     + math.cos(_angle) * _offset2)
+                     - math.cos(angle - math.pi/2) * offset1
+                     + math.cos(angle) * offset2)
 
-    def get_weapon_y(self, _offset1=17, _offset2=40):
+    def get_weapon_y(self, offset1=17, offset2=40):
         """
         Get the real y coordinate of the weapon in the game world.
         """
-        _angle = self.get_angle()
+        angle = self.get_angle()
         return round(self.get_y()
-                     - math.sin(_angle - math.pi/2) * _offset1
-                     + math.sin(_angle) * _offset2)
+                     - math.sin(angle - math.pi/2) * offset1
+                     + math.sin(angle) * offset2)
 
-    def get_virt_weapon_x(self, _offset1=17, _offset2=40):
+    def get_virt_weapon_x(self, offset1=17, offset2=40):
         """
         Get the virtual x coordinate of weapon on the screen.
         """
-        _angle = self.get_angle()
+        angle = self.get_angle()
         return round(self.get_virt_x()
-                     - math.cos(_angle - math.pi/2) * _offset1
-                     + math.cos(_angle) * _offset2)
+                     - math.cos(angle - math.pi/2) * offset1
+                     + math.cos(angle) * offset2)
 
-    def get_virt_weapon_y(self, _offset1=17, _offset2=40):
+    def get_virt_weapon_y(self, offset1=17, offset2=40):
         """
         Get the virtual y coordinate of weapon on the screen.
         """
-        _angle = self.get_angle()
+        angle = self.get_angle()
         return round(self.get_virt_y()
-                     - math.sin(_angle - math.pi/2) * _offset1
-                     + math.sin(_angle) * _offset2)
+                     - math.sin(angle - math.pi/2) * offset1
+                     + math.sin(angle) * offset2)
 
 
 class PlayerFeet(Animation):
@@ -432,13 +431,13 @@ class PlayerFeet(Animation):
                   * self.feet_offset_px//2)
         )
 
-    def update(self, _dt, _direction):
+    def update(self, dt, direction):
         """
         Update the player feets object.
         """
 
         # Accumulate time since last update.
-        self._next_update += _dt
+        self._next_update += dt
         # If more time has passed as a period, then we need to update.
         if self._next_update >= self._period:
             # Skipping frames if too much time has passed.
@@ -450,10 +449,10 @@ class PlayerFeet(Animation):
             self.frame %= len(self.images[self.feet_index])
 
         # @todo: Not time based yet
-        self.move(_direction)
+        self.move(direction)
         self.rotate()
 
-    def move(self, _direction):
+    def move(self, direction):
         """
         Move the player feets in the specific direction.
         """
@@ -474,12 +473,12 @@ class PlayerFeet(Animation):
                   * self.feet_offset_px//2)
         )
 
-        self.rect.move_ip(*[d * self.player.speed for d in _direction])
+        self.rect.move_ip(*[d * self.player.speed for d in direction])
 
-        if _direction[0] != 0 or _direction[1] != 0:
+        if direction[0] != 0 or direction[1] != 0:
             # Move state
             self.feet_index = 1
-        elif _direction[0] == 0 and _direction[1] == 0:
+        elif direction[0] == 0 and direction[1] == 0:
             # Idle state
             self.frame = 0
             self.feet_index = 0
@@ -516,7 +515,7 @@ class Bullet(Ray):
     def __init__(self, _x, _y, _angle):
         Ray.__init__(self, _x, _y, _angle)
 
-    def draw(self, screen, _offset):
+    def draw(self, screen, offset):
         """
         Draw the bullet.
         """
@@ -524,16 +523,16 @@ class Bullet(Ray):
         if self.intersect:
             if self.impact:
                 # Draw the impact
-                pg.draw.circle(screen, YELLOW,
-                               (self.intersect['x'] - _offset[0],
-                                self.intersect['y'] - _offset[1]), 2)
+                pg.draw.circle(screen, (255, 0, 0),
+                               (self.intersect['x'] - offset[0],
+                                self.intersect['y'] - offset[1]), 2)
             else:
                 # Draw the trail of the bullet
                 pg.draw.line(screen, GRAY_LIGHT,
-                             (self.x0 - _offset[0] + math.cos(self.angle)
+                             (self.x0 - offset[0] + math.cos(self.angle)
                               * self.trail_offset,
-                              self.y0 - _offset[1] + math.sin(self.angle)
+                              self.y0 - offset[1] + math.sin(self.angle)
                               * self.trail_offset),
-                             (self.intersect['x'] - _offset[0],
-                              self.intersect['y'] - _offset[1]))
+                             (self.intersect['x'] - offset[0],
+                              self.intersect['y'] - offset[1]))
                 self.impact = True

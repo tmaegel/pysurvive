@@ -11,7 +11,7 @@ from class_toolchain import Ray
 
 class Flashlight():
 
-    rays = []
+    rays = []  # type: ignore
 
     def __init__(self, _player, _x0, _y0):
         self.player = _player

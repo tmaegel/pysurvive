@@ -1,7 +1,11 @@
 import pygame as pg
 
+from config import (
+    BLACK,
+    GRAY_LIGHT2,
+    GRAY_LIGHT3,
+)
 from class_toolchain import Block
-from utils import load_image
 
 
 class Room(pg.sprite.Sprite):
@@ -9,8 +13,6 @@ class Room(pg.sprite.Sprite):
     scale_px = 512
     wall_size = 10
     door_size = 100
-
-    texture_path = 'textures/brick/ground_02.png'
 
     def __init__(self, _x, _y, _width, _height, _offset, _doors=()):
         pg.sprite.Sprite.__init__(self)
@@ -24,114 +26,108 @@ class Room(pg.sprite.Sprite):
 
         self.image = pg.Surface([self.width, self.height])
         self.rect = self.image.get_rect()
-
         # Set the initial position for drawing only.
         self.rect.x = self.x - _offset[0]
         self.rect.y = self.y - _offset[1]
-
-        self.texture_orig, _ = load_image(self.texture_path)
-        self.texture = pg.transform.scale(
-            self.texture_orig, (self.scale_px, self.scale_px))
-        for x in range(0, self.rect.width, self.scale_px):
-            for y in range(0, self.rect.height, self.scale_px):
-                self.image.blit(self.texture, (x, y))
-
-        self.wall_color = (88, 77, 64)
+        self.image.fill(GRAY_LIGHT3)
 
         self.walls = []
+        # Two cornor walls at the top
+        self.walls.append(Wall(self.x, self.y,
+                               self.wall_size, self.wall_size,
+                               _offset, ()))
+        self.walls.append(Wall(self.x + self.width - self.wall_size,
+                               self.y,
+                               self.wall_size, self.wall_size,
+                               _offset, ()))
         # Door in the top
+        x = self.x + self.wall_size
         if 'top' not in self.doors:
-            self.walls.append(Wall(self.x,
-                                   self.y,
-                                   self.width,
+            self.walls.append(Wall(x, self.y,
+                                   self.width - self.wall_size * 2,
                                    self.wall_size,
-                                   self.wall_color,
-                                   _offset))
+                                   _offset, ('bottom',)))
         else:
-            self.walls.append(Wall(self.x,
-                                   self.y,
-                                   self.width//2 - self.door_size//2,
-                                   self.wall_size,
-                                   self.wall_color,
-                                   _offset))
-            self.walls.append(Wall(self.x + self.width//2 + self.door_size//2,
-                                   self.y,
-                                   self.width//2 - self.door_size//2,
-                                   self.wall_size,
-                                   self.wall_color,
-                                   _offset))
+            width = round((self.width - self.wall_size * 2) /
+                          2 - self.door_size / 2)
+            self.walls.append(Wall(x, self.y, width, self.wall_size,
+                                   _offset, ('bottom', 'right')))
+            self.walls.append(Wall(x + width + self.door_size, self.y,
+                                   width, self.wall_size,
+                                   _offset, ('bottom', 'left')))
+
+        # Two cornor walls at the bottom
+        self.walls.append(Wall(self.x,
+                               self.y + self.height - self.wall_size,
+                               self.wall_size, self.wall_size,
+                               _offset, ()))
+        self.walls.append(Wall(self.x + self.width - self.wall_size,
+                               self.y + self.height - self.wall_size,
+                               self.wall_size, self.wall_size,
+                               _offset, ()))
         # Door on the bottom
+        x = self.x + self.wall_size
+        y = self.y + self.height - self.wall_size
         if 'bottom' not in self.doors:
-            self.walls.append(Wall(self.x,
-                                   self.y + self.height - self.wall_size,
-                                   self.width,
+            self.walls.append(Wall(x, y,
+                                   self.width - self.wall_size * 2,
                                    self.wall_size,
-                                   self.wall_color,
-                                   _offset))
+                                   _offset, ('top',)))
         else:
-            self.walls.append(Wall(self.x,
-                                   self.y + self.height - self.wall_size,
-                                   self.width//2 - self.door_size//2,
-                                   self.wall_size,
-                                   self.wall_color,
-                                   _offset))
-            self.walls.append(Wall(self.x + self.width//2 + self.door_size//2,
-                                   self.y + self.height - self.wall_size,
-                                   self.width//2 - self.door_size//2,
-                                   self.wall_size,
-                                   self.wall_color,
-                                   _offset))
+            width = round((self.width - self.wall_size * 2) /
+                          2 - self.door_size / 2)
+            self.walls.append(Wall(x, y, width, self.wall_size,
+                                   _offset, ('top', 'right')))
+            self.walls.append(Wall(x + width + self.door_size, y,
+                                   width, self.wall_size,
+                                   _offset, ('top', 'left')))
+
         # Door in the left
         if 'left' not in self.doors:
             self.walls.append(Wall(self.x,
                                    self.y + self.wall_size,
                                    self.wall_size,
                                    self.height - self.wall_size * 2,
-                                   self.wall_color,
-                                   _offset))
+                                   _offset, ('right',)))
         else:
             self.walls.append(Wall(self.x,
                                    self.y + self.wall_size,
                                    self.wall_size,
                                    self.height//2 - self.wall_size
                                    - self.door_size//2,
-                                   self.wall_color,
-                                   _offset))
+                                   _offset, ('right', 'bottom')))
             self.walls.append(Wall(self.x,
                                    self.y + self.height//2 + self.door_size//2,
                                    self.wall_size,
                                    self.height//2 - self.wall_size
                                    - self.door_size//2,
-                                   self.wall_color,
-                                   _offset))
+                                   _offset, ('right', 'top')))
+
         # Door on the right
         if 'right' not in self.doors:
             self.walls.append(Wall(self.x + self.width - self.wall_size,
                                    self.y + self.wall_size,
                                    self.wall_size,
                                    self.height - self.wall_size * 2,
-                                   self.wall_color,
-                                   _offset))
+                                   _offset, ('left',)))
         else:
             self.walls.append(Wall(self.x + self.width - self.wall_size,
                                    self.y + self.wall_size,
                                    self.wall_size,
                                    self.height//2 - self.wall_size
                                    - self.door_size//2,
-                                   self.wall_color,
-                                   _offset))
+                                   _offset, ('left', 'bottom')))
             self.walls.append(Wall(self.x + self.width - self.wall_size,
                                    self.y + self.height//2 + self.door_size//2,
                                    self.wall_size,
                                    self.height//2 - self.wall_size
                                    - self.door_size//2,
-                                   self.wall_color,
-                                   _offset))
+                                   _offset, ('left', 'top')))
 
-    def update(self, _offset):
+    def update(self, offset):
         # Update x, y position of the rect for drawing only.
-        self.rect.x = round(self.x - _offset[0])
-        self.rect.y = round(self.y - _offset[1])
+        self.rect.x = round(self.x - offset[0])
+        self.rect.y = round(self.y - offset[1])
 
     def get_door(self):
         doors = []
@@ -165,19 +161,61 @@ class Room(pg.sprite.Sprite):
 
 class Wall(Block):
 
-    def __init__(self, _x, _y, _width, _height, _color, _offset):
-        Block.__init__(self, _x, _y, _width, _height, _offset)
-        self.image.fill(_color)
+    thickness = 2
+
+    def __init__(self, _x, _y, _width, _height, _sides, _offset):
+        Block.__init__(self, _x, _y, _width, _height, _sides, _offset)
+
+        self.image.fill(GRAY_LIGHT2)
+
+        # Initial draw the wall segments in the image.
+        self.draw()
+
+    def draw(self):
+        if 'top' in self.sides:
+            pg.draw.line(self.image, BLACK,
+                         (0, 0), (self.width, 0),
+                         self.thickness)
+        if 'right' in self.sides:
+            pg.draw.line(self.image, BLACK,
+                         (self.width - self.thickness, 0),
+                         (self.width - self.thickness, self.height),
+                         self.thickness)
+        if 'bottom' in self.sides:
+            pg.draw.line(self.image, BLACK,
+                         (0, 0 + self.height - self.thickness),
+                         (self.width, 0 + self.height - self.thickness),
+                         self.thickness)
+        if 'left' in self.sides:
+            pg.draw.line(self.image, BLACK,
+                         (0, 0), (0, self.height),
+                         self.thickness)
 
 
 class Box(Block):
 
-    texture_path = 'objects/block/box_01.png'
+    thickness = 2
 
     def __init__(self, _x, _y, _size, _offset):
         Block.__init__(self, _x, _y, _size, _size, _offset)
 
-        self.texture_orig, _ = load_image(self.texture_path)
-        self.texture = pg.transform.scale(
-            self.texture_orig, (self.width, self.height))
-        self.image.blit(self.texture, (0, 0))
+        self.image.fill(GRAY_LIGHT2)
+
+        # Initial draw the wall segments in the image.
+        self.draw()
+
+    def draw(self):
+        pg.draw.line(self.image, BLACK,
+                     (0, 0), (self.width, 0),
+                     self.thickness)
+        pg.draw.line(self.image, BLACK,
+                     (self.width - self.thickness, 0),
+                     (self.width - self.thickness, self.height),
+                     self.thickness)
+        pg.draw.line(self.image, BLACK,
+                     (0, 0 + self.height - self.thickness),
+                     (self.width, 0 + self.height - self.thickness),
+                     self.thickness)
+        pg.draw.line(self.image, BLACK,
+                     (0, 0), (0, self.height),
+                     self.thickness)

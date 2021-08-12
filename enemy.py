@@ -75,13 +75,13 @@ class Enemy(Animation):
         self.rect.centerx = self.x - _offset[0]
         self.rect.centery = self.y - _offset[1]
 
-    def update(self, _dt, _offset):
+    def update(self, dt, offset):
         """
         Update the enemy object.
         """
 
         # Accumulate time since last update.
-        self._next_update += _dt
+        self._next_update += dt
         # If more time has passed as a period, then we need to update.
         if self._next_update >= self._period:
             # Skipping frames if too much time has passed.
@@ -97,8 +97,8 @@ class Enemy(Animation):
 
         # @todo: Not time based yet
         # Update the position of the sprite.
-        self.rect.centerx = round(self.x - _offset[0])
-        self.rect.centery = round(self.y - _offset[1])
+        self.rect.centerx = round(self.x - offset[0])
+        self.rect.centery = round(self.y - offset[1])
 
         # self.move()
         self.rotate(self.angle)
@@ -118,7 +118,7 @@ class Enemy(Animation):
         self.rect.centerx = round(self.rect.centerx + _dx)
         self.rect.centery = round(self.rect.centery + _dy)
 
-    def rotate(self, _angle):
+    def rotate(self, angle):
         """
         Rotate the enemy object on the center.
         Need to negate the result, if the image starts
@@ -128,7 +128,7 @@ class Enemy(Animation):
         """
         self.image = pg.transform.rotate(
             self.images[self.movement_index][self.frame],
-            (-1 * _angle * (180 / math.pi)))
+            (-1 * angle * (180 / math.pi)))
         # Recreating mask after every rotation
         self.mask = pg.mask.from_surface(self.image)
         # Keep the image on the same position.
@@ -145,6 +145,6 @@ class Enemy(Animation):
     def animate(self):
         pass
 
-    def _get_move_vector(self, _angle, _speed):
-        return (math.cos(_angle) * _speed,
-                math.sin(_angle) * _speed)
+    def _get_move_vector(self, angle, speed):
+        return (math.cos(angle) * speed,
+                math.sin(angle) * speed)
