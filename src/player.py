@@ -14,6 +14,7 @@ from flashlight import Flashlight
 
 class Player(Animation):
 
+    scale = 4
     speed = 6
 
     # Define the single movement states.
@@ -69,8 +70,8 @@ class Player(Animation):
                         image, _ = load_image(
                             path + img, alpha=True, path=False)
                         _images.append(pg.transform.scale(
-                            image, (image.get_rect().width//3,
-                                    image.get_rect().height//3)))
+                            image, (image.get_rect().width // self.scale,
+                                    image.get_rect().height // self.scale)))
                 self.images.append(_images)
             else:
                 print('warn: Directory ' + directory + ' doesnt exists.')
@@ -341,7 +342,7 @@ class Player(Animation):
             self.get_aim_x() - self.get_virt_weapon_x())
             + 2 * math.pi) % (2 * math.pi)
 
-    def get_weapon_x(self, offset1=17, offset2=40):
+    def get_weapon_x(self, offset1=13, offset2=15):
         """
         Get the real x coordinate of the weapon in the game world.
         """
@@ -350,7 +351,7 @@ class Player(Animation):
                      - math.cos(angle - math.pi/2) * offset1
                      + math.cos(angle) * offset2)
 
-    def get_weapon_y(self, offset1=17, offset2=40):
+    def get_weapon_y(self, offset1=13, offset2=15):
         """
         Get the real y coordinate of the weapon in the game world.
         """
@@ -359,7 +360,7 @@ class Player(Animation):
                      - math.sin(angle - math.pi/2) * offset1
                      + math.sin(angle) * offset2)
 
-    def get_virt_weapon_x(self, offset1=17, offset2=40):
+    def get_virt_weapon_x(self, offset1=13, offset2=15):
         """
         Get the virtual x coordinate of weapon on the screen.
         """
@@ -368,7 +369,7 @@ class Player(Animation):
                      - math.cos(angle - math.pi/2) * offset1
                      + math.cos(angle) * offset2)
 
-    def get_virt_weapon_y(self, offset1=17, offset2=40):
+    def get_virt_weapon_y(self, offset1=13, offset2=15):
         """
         Get the virtual y coordinate of weapon on the screen.
         """
@@ -384,8 +385,10 @@ class PlayerFeet(Animation):
     A player subclass to hold the feet images / states of the player.
     """
 
+    scale = 5
+
     # @workaroung: offset (20) for rifle, shutgun and knife
-    feet_offset_px = 10
+    feet_offset_px = 5
 
     feet_index = 0
     feets = [
@@ -410,8 +413,8 @@ class PlayerFeet(Animation):
                         image, _ = load_image(
                             path + img, alpha=True, path=False)
                         _images.append(pg.transform.scale(
-                            image, (image.get_rect().width//3,
-                                    image.get_rect().height//3)))
+                            image, (image.get_rect().width // self.scale,
+                                    image.get_rect().height // self.scale)))
                 self.images.append(_images)
             else:
                 print('warn: Directory ' + directory + ' doesnt exists.')

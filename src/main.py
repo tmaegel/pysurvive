@@ -66,12 +66,6 @@ class Game():
         # A sprite group that contains all room sprites..
         self.room_sprites = pg.sprite.RenderPlain(
             self.create_rooms()
-            # Room(100, 100, 800, 600, self.get_offset(),
-            #      _doors=('right', 'left')),
-            # Room(-400, -100, 500, 1000, self.get_offset(),
-            #      _doors=('bottom', 'right')),
-            # Room(-400, 900, 500, 250, self.get_offset(), _doors=('top')),
-            # Room(900, 200, 600, 400, self.get_offset(), _doors=('left')),
         )
 
         # A sprite group that contains all wall and block sprites.
@@ -85,7 +79,7 @@ class Game():
         self.navmesh = NavMesh(self)
 
         self.enemy_sprites = pg.sprite.RenderPlain(
-            # Enemy(self, 1150, 400),
+            Enemy(self, 100, 100),
         )
         # A sprite group that contains all close room sprites (render only).
         self.room_render_sprites = pg.sprite.RenderPlain()

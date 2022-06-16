@@ -11,6 +11,7 @@ from class_toolchain import Animation
 
 class Enemy(Animation):
 
+    scale = 4
     speed = 2
 
     # Define the single movement states.
@@ -61,8 +62,8 @@ class Enemy(Animation):
                         image, _ = load_image(
                             path + img, alpha=True, path=False)
                         _images.append(pg.transform.scale(
-                            image, (image.get_rect().width//3,
-                                    image.get_rect().height//3)))
+                            image, (image.get_rect().width // self.scale,
+                                    image.get_rect().height // self.scale)))
                 self.images.append(_images)
             else:
                 print('warn: Directory ' + directory + ' doesnt exists.')
