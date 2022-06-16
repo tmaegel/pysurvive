@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# coding=utf-8
 import math
 import os
 
@@ -108,7 +110,7 @@ class Enemy(Animation):
         # self.move()
         self.rotate(self.angle)
 
-    def move(self):
+    def move(self) -> None:
         # Get the path to the player position.
         self.path = self.game.navmesh.get_astar_path(
             (self.x, self.y), (self.game.get_player_pos())
@@ -124,7 +126,7 @@ class Enemy(Animation):
         self.rect.centerx = round(self.rect.centerx + _dx)
         self.rect.centery = round(self.rect.centery + _dy)
 
-    def rotate(self, angle):
+    def rotate(self, angle) -> None:
         """
         Rotate the enemy object on the center.
         Need to negate the result, if the image starts
@@ -145,10 +147,10 @@ class Enemy(Animation):
         # Put the new rect's center at old center.
         self.rect.center = (x, y)
 
-    def attack(self):
+    def attack(self) -> None:
         pass
 
-    def animate(self):
+    def animate(self) -> None:
         pass
 
     def _get_move_vector(self, angle, speed):

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# coding=utf-8
 import pygame as pg
 
 from class_toolchain import Block
@@ -249,7 +251,7 @@ class Wall(Block):
         # Initial draw the wall segments in the image.
         self.draw()
 
-    def draw(self):
+    def draw(self) -> None:
         if "top" in self.sides:
             pg.draw.line(self.image, BLACK, (0, 0), (self.width, 0), self.thickness)
         if "right" in self.sides:
@@ -284,7 +286,7 @@ class Box(Block):
         # Initial draw the wall segments in the image.
         self.draw()
 
-    def draw(self):
+    def draw(self) -> None:
         pg.draw.line(self.image, BLACK, (0, 0), (self.width, 0), self.thickness)
         pg.draw.line(
             self.image,
