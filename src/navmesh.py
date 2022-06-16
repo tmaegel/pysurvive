@@ -1,7 +1,7 @@
 import triangle as tr
 
 
-class NavMesh():
+class NavMesh:
 
     """
     This NavMesh class creates a navmesh (division of the
@@ -47,8 +47,7 @@ class NavMesh():
 
         # Add rooms.
         for room in self.game.room_sprites.sprites():
-            make_box(room.x, room.y,
-                     room.width, room.height)
+            make_box(room.x, room.y, room.width, room.height)
             # Extract the doors of each room.
             # Do not append duplicates.
             for door in room.get_door():
@@ -64,12 +63,12 @@ class NavMesh():
             holes.append(block.get_center())
 
         A = dict(vertices=vertices, segments=segments, holes=holes)
-        B = tr.triangulate(A, 'pA')
+        B = tr.triangulate(A, "pA")
 
         mesh = []
-        vertices = B['vertices'].tolist()
+        vertices = B["vertices"].tolist()
         # Create node objects based on the triangulation.
-        for triangle in B['triangles'].tolist():
+        for triangle in B["triangles"].tolist():
             polygon = []
             for index in triangle:
                 point = vertices[index]
@@ -162,9 +161,9 @@ class NavMesh():
 
                     # Create the f, g, and h values
                     node.g = current_node.g + 1
-                    node.h = (
-                        ((node.position[0] - end_node.position[0]) ** 2)
-                        + ((node.position[1] - end_node.position[1]) ** 2))
+                    node.h = ((node.position[0] - end_node.position[0]) ** 2) + (
+                        (node.position[1] - end_node.position[1]) ** 2
+                    )
                     node.f = node.g + node.h
 
                     # Node is already in the open list
@@ -181,7 +180,7 @@ class NavMesh():
                     open_list.append(node)
 
 
-class Node():
+class Node:
 
     """
     Wrapper class for nodes.
@@ -218,7 +217,7 @@ class Node():
         return self.f < other.f
 
 
-class Triangle():
+class Triangle:
 
     """
     A triangle class for A* pathfinding.
@@ -257,7 +256,7 @@ class Triangle():
             ox += p[0]
             oy += p[1]
 
-        return (ox//3, oy//3)
+        return (ox // 3, oy // 3)
 
     def _get_nodes(self):
         """
@@ -276,10 +275,12 @@ class Triangle():
                 p2 = self.triangle[i]
             if i != 0:
                 nodes.append(
-                    Node(self, None,
-                         ((p2[0] - p1[0])//2 + p1[0],
-                          (p2[1] - p1[1])//2 + p1[1])
-                         ))
+                    Node(
+                        self,
+                        None,
+                        ((p2[0] - p1[0]) // 2 + p1[0], (p2[1] - p1[1]) // 2 + p1[1]),
+                    )
+                )
             p1 = p2
 
         return nodes

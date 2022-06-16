@@ -1,15 +1,12 @@
 import math
+
 import pygame as pg
 
-from config import (
-    COLORKEY,
-    RED_LIGHT,
-)
-
 from class_toolchain import Ray
+from config import COLORKEY, RED_LIGHT
 
 
-class Flashlight():
+class Flashlight:
 
     rays = []  # type: ignore
 
@@ -54,19 +51,20 @@ class Flashlight():
             #             (ray2.intersect['x'], ray2.intersect['y']))
             # Consider points that are in the view only
             # if self._is_point_in_view(point, triangle):
-            angle = (math.atan2(
-                point[1] - _y0,
-                point[0] - _x0) + 2 * math.pi) % (2 * math.pi)
-            unique_angles.append(angle-0.00001)
+            angle = (math.atan2(point[1] - _y0, point[0] - _x0) + 2 * math.pi) % (
+                2 * math.pi
+            )
+            unique_angles.append(angle - 0.00001)
             unique_angles.append(angle)
-            unique_angles.append(angle+0.00001)
+            unique_angles.append(angle + 0.00001)
 
         # With the resulting angles we can now calculate the intersection
         # between block and ray.
         for angle in unique_angles:
             ray = LightRay(_x0, _y0, angle)
             ray.intersect = ray.get_intersection(
-                self.player.game.block_sprites.sprites())
+                self.player.game.block_sprites.sprites()
+            )
             if ray.intersect:
                 rays.append(ray)
 
@@ -173,10 +171,12 @@ class Flashlight():
         #     polygon.append((self.x0, self.y0))
 
         for ray in _rays:
-            polygon.append((ray.intersect['x']
-                            - self.player.game.get_offset()[0],
-                            ray.intersect['y']
-                            - self.player.game.get_offset()[1]))
+            polygon.append(
+                (
+                    ray.intersect["x"] - self.player.game.get_offset()[0],
+                    ray.intersect["y"] - self.player.game.get_offset()[1],
+                )
+            )
 
         return polygon
 
@@ -211,7 +211,6 @@ class Flashlight():
 
 
 class LightRay(Ray):
-
     def __init__(self, _x, _y, _angle):
         Ray.__init__(self, _x, _y, _angle)
 
@@ -236,10 +235,15 @@ class LightRay(Ray):
         """
 
         if self.intersect:
-            pg.draw.line(screen, RED_LIGHT,
-                         (_x, _y),
-                         (self.intersect['x'] - _offset[0],
-                          self.intersect['y'] - _offset[1]))
-            pg.draw.circle(screen, RED_LIGHT,
-                           (self.intersect['x'] - _offset[0],
-                            self.intersect['y'] - _offset[1]), 4)
+            pg.draw.line(
+                screen,
+                RED_LIGHT,
+                (_x, _y),
+                (self.intersect["x"] - _offset[0], self.intersect["y"] - _offset[1]),
+            )
+            pg.draw.circle(
+                screen,
+                RED_LIGHT,
+                (self.intersect["x"] - _offset[0], self.intersect["y"] - _offset[1]),
+                4,
+            )

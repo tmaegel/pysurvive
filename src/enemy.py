@@ -1,12 +1,11 @@
-import os
 import math
+import os
+
 import pygame as pg
 
-from config import (
-    IMAGE_DIR,
-)
-from utils import load_image
 from class_toolchain import Animation
+from config import IMAGE_DIR
+from utils import load_image
 
 
 class Enemy(Animation):
@@ -19,13 +18,13 @@ class Enemy(Animation):
     movement_index = 0
     movements = [
         {
-            'name': 'idle',
+            "name": "idle",
         },
         {
-            'name': 'move',
+            "name": "move",
         },
         {
-            'name': 'attack',
+            "name": "attack",
         },
     ]
 
@@ -54,19 +53,24 @@ class Enemy(Animation):
         # Preloading images
         for movement in self.movements:
             _images = []
-            directory = IMAGE_DIR + 'zombie/' + movement['name'] + '/'
+            directory = IMAGE_DIR + "zombie/" + movement["name"] + "/"
             if os.path.isdir(directory):
                 path, _, files = next(os.walk(directory))
                 for img in sorted(files):
-                    if 'spritesheet' not in img:
-                        image, _ = load_image(
-                            path + img, alpha=True, path=False)
-                        _images.append(pg.transform.scale(
-                            image, (image.get_rect().width // self.scale,
-                                    image.get_rect().height // self.scale)))
+                    if "spritesheet" not in img:
+                        image, _ = load_image(path + img, alpha=True, path=False)
+                        _images.append(
+                            pg.transform.scale(
+                                image,
+                                (
+                                    image.get_rect().width // self.scale,
+                                    image.get_rect().height // self.scale,
+                                ),
+                            )
+                        )
                 self.images.append(_images)
             else:
-                print('warn: Directory ' + directory + ' doesnt exists.')
+                print("warn: Directory " + directory + " doesnt exists.")
 
         self.image = self.images[self.movement_index][0]
         self.mask = pg.mask.from_surface(self.image)
@@ -87,7 +91,7 @@ class Enemy(Animation):
         if self._next_update >= self._period:
             # Skipping frames if too much time has passed.
             # Since _next_update is bigger than period this is at least 1.
-            self.frame += int(self._next_update/self._period)
+            self.frame += int(self._next_update / self._period)
             # Time that already has passed since last update.
             self._next_update %= self._period
             # Limit the frame to the length of the image list.
@@ -107,7 +111,8 @@ class Enemy(Animation):
     def move(self):
         # Get the path to the player position.
         self.path = self.game.navmesh.get_astar_path(
-            (self.x, self.y), (self.game.get_player_pos()))
+            (self.x, self.y), (self.game.get_player_pos())
+        )
 
         self.movement_index = 1
         # Get the move vector based in the angle
@@ -128,8 +133,8 @@ class Enemy(Animation):
         :param angle: Rotation angle
         """
         self.image = pg.transform.rotate(
-            self.images[self.movement_index][self.frame],
-            (-1 * angle * (180 / math.pi)))
+            self.images[self.movement_index][self.frame], (-1 * angle * (180 / math.pi))
+        )
         # Recreating mask after every rotation
         self.mask = pg.mask.from_surface(self.image)
         # Keep the image on the same position.
@@ -147,5 +152,4 @@ class Enemy(Animation):
         pass
 
     def _get_move_vector(self, angle, speed):
-        return (math.cos(angle) * speed,
-                math.sin(angle) * speed)
+        return (math.cos(angle) * speed, math.sin(angle) * speed)

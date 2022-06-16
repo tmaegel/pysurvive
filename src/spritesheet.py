@@ -1,18 +1,16 @@
-import pygame as pg
 import json
 
-from config import (
-    COLORKEY,
-)
+import pygame as pg
+
+from config import COLORKEY
 from utils import load_image
 
 
 class Spritesheet:
-
     def __init__(self, filename):
         self.filename = filename
         self.sprite_sheet, _ = load_image(filename, alpha=True, path=False)
-        self.meta_data = self.filename.replace('png', 'json')
+        self.meta_data = self.filename.replace("png", "json")
         with open(self.meta_data) as f:
             self.data = json.load(f)
         f.close()
@@ -25,7 +23,7 @@ class Spritesheet:
         return sprite
 
     def parse_sprite(self, index):
-        sprite = self.data['frames'][index]['frame']
+        sprite = self.data["frames"][index]["frame"]
         x, y, w, h = sprite["x"], sprite["y"], sprite["w"], sprite["h"]
         image = self.get_sprite(x, y, w, h)
 

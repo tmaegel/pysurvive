@@ -1,13 +1,11 @@
 import math
+
 import pygame as pg
 
-from config import (
-    FPS,
-)
+from config import FPS
 
 
 class Animation(pg.sprite.Sprite):
-
     def __init__(self):
         # call Sprite initializer
         pg.sprite.Sprite.__init__(self)
@@ -18,7 +16,7 @@ class Animation(pg.sprite.Sprite):
         # Next time it has to be updated in ms.
         self._next_update = 0
         # Frequency/period of the animation in ms.
-        self._period = 1000./FPS
+        self._period = 1000.0 / FPS
 
 
 class Screen(pg.sprite.Sprite):
@@ -37,7 +35,7 @@ class Screen(pg.sprite.Sprite):
         self.rect.y = _y
 
 
-class LineSegment():
+class LineSegment:
 
     """
     Simple helper class to wrap all line segments (sides / line element)
@@ -61,8 +59,15 @@ class Block(pg.sprite.Sprite):
     coordinates and width, height.
     """
 
-    def __init__(self, _x, _y, _width, _height, _offset,
-                 _sides=('top', 'right', 'bottom', 'left')):
+    def __init__(
+        self,
+        _x,
+        _y,
+        _width,
+        _height,
+        _offset,
+        _sides=("top", "right", "bottom", "left"),
+    ):
         pg.sprite.Sprite.__init__(self)
         self.x = _x
         self.y = _y
@@ -81,22 +86,32 @@ class Block(pg.sprite.Sprite):
 
         # Add LineSegments (sides) of the block.
         self.segments = []
-        if 'top' in self.sides:
+        if "top" in self.sides:
             self.segments.append(
-                LineSegment(self.x, self.y,
-                            self.x + self.width, self.y))
-        if 'right' in self.sides:
+                LineSegment(self.x, self.y, self.x + self.width, self.y)
+            )
+        if "right" in self.sides:
             self.segments.append(
-                LineSegment(self.x + self.width, self.y,
-                            self.x + self.width, self.y + self.height))
-        if 'bottom' in self.sides:
+                LineSegment(
+                    self.x + self.width,
+                    self.y,
+                    self.x + self.width,
+                    self.y + self.height,
+                )
+            )
+        if "bottom" in self.sides:
             self.segments.append(
-                LineSegment(self.x, self.y + self.height,
-                            self.x + self.width, self.y + self.height))
-        if 'left' in self.sides:
+                LineSegment(
+                    self.x,
+                    self.y + self.height,
+                    self.x + self.width,
+                    self.y + self.height,
+                )
+            )
+        if "left" in self.sides:
             self.segments.append(
-                LineSegment(self.x, self.y, self.x,
-                            self.y + self.height))
+                LineSegment(self.x, self.y, self.x, self.y + self.height)
+            )
 
         # Points of the drawed line segments.
         self.points = ()
@@ -112,10 +127,10 @@ class Block(pg.sprite.Sprite):
         return self.points
 
     def get_center(self):
-        return [self.x + self.width//2, self.y + self.height//2]
+        return [self.x + self.width // 2, self.y + self.height // 2]
 
 
-class Ray():
+class Ray:
 
     intersect = None
 
@@ -149,12 +164,16 @@ class Ray():
                 if not intersect:
                     continue
                 if closest:
-                    if (not result_intersect or
-                            intersect['param'] < result_intersect['param']):
+                    if (
+                        not result_intersect
+                        or intersect["param"] < result_intersect["param"]
+                    ):
                         result_intersect = intersect
                 else:
-                    if (not result_intersect or
-                            intersect['param'] > result_intersect['param']):
+                    if (
+                        not result_intersect
+                        or intersect["param"] > result_intersect["param"]
+                    ):
                         result_intersect = intersect
 
         return result_intersect
@@ -178,10 +197,11 @@ class Ray():
 
         # Check if they are. If so, no intersect
         ray_mag = math.sqrt(dx * dx + dy * dy)
-        segment_mag = math.sqrt(
-            segment_dx * segment_dx + segment_dy * segment_dy)
-        if (dx / ray_mag == segment_dx / segment_mag and
-                dy / ray_mag == segment_dy / segment_mag):
+        segment_mag = math.sqrt(segment_dx * segment_dx + segment_dy * segment_dy)
+        if (
+            dx / ray_mag == segment_dx / segment_mag
+            and dy / ray_mag == segment_dy / segment_mag
+        ):
             # Directions are the same.
             return None
 
@@ -199,9 +219,9 @@ class Ray():
         #           + ray_dy * (ray.x1 - segment.x1)) /
         #          (segment_dx * ray_dy - segment_dy * ray_dx)
         try:
-            T2 = ((dx * (segment.y1 - self.y0) +
-                   dy * (self.x0 - segment.x1)) /
-                  (segment_dx * dy - segment_dy * dx))
+            T2 = (dx * (segment.y1 - self.y0) + dy * (self.x0 - segment.x1)) / (
+                segment_dx * dy - segment_dy * dx
+            )
             T1 = (segment.x1 + segment_dx * T2 - self.x0) / dx
         except ZeroDivisionError:
             # print("warn: division by zero")
@@ -214,8 +234,4 @@ class Ray():
             return None
 
         # Return the point of intersection
-        return {
-            'x': int(self.x0 + dx * T1),
-            'y': int(self.y0 + dy * T1),
-            'param': T1
-        }
+        return {"x": int(self.x0 + dx * T1), "y": int(self.y0 + dy * T1), "param": T1}

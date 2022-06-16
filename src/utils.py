@@ -1,11 +1,9 @@
 import os
+
 import pygame as pg
 from pygame.locals import RLEACCEL
 
-from config import (
-    IMAGE_DIR,
-    SOUND_DIR,
-)
+from config import IMAGE_DIR, SOUND_DIR
 
 
 def load_image(name, alpha=False, colorkey=None, path=True):
@@ -17,7 +15,7 @@ def load_image(name, alpha=False, colorkey=None, path=True):
     try:
         image = pg.image.load(fullname)
     except pg.error as message:
-        print('Cannot load image:', fullname)
+        print("Cannot load image:", fullname)
         raise SystemExit(message)
     # makes a new copy of a Surface and converts its
     # color format and depth to match the display
@@ -35,7 +33,8 @@ def load_image(name, alpha=False, colorkey=None, path=True):
 
 def load_sound(name, path=True):
     class NoneSound:
-        def play(self): pass
+        def play(self):
+            pass
 
     if not pg.mixer:
         return NoneSound()
@@ -48,7 +47,7 @@ def load_sound(name, path=True):
     try:
         sound = pg.mixer.Sound(fullname)
     except pg.error as message:
-        print('Cannot load sound:', fullname)
+        print("Cannot load sound:", fullname)
         raise SystemExit(message)
 
     return sound

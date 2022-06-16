@@ -1,29 +1,20 @@
+#!/usr/bin/env python
+# coding=utf-8
+
 import random
+
 import pygame as pg
-from pygame.locals import (
-    QUIT,
-    K_ESCAPE,
-    KEYDOWN,
-    MOUSEBUTTONDOWN,
-    MOUSEBUTTONUP,
-)
+from pygame.locals import K_ESCAPE, KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP, QUIT
 
-from config import (
-    FPS,
-    COLORKEY,
-    BLUE,
-    RED_LIGHT,
-    GRAY_LIGHT2,
-    SCREEN_RECT,
-)
 from class_toolchain import Screen
-from navmesh import NavMesh
-from room import Room, Box
-from player import Player
+from config import BLUE, COLORKEY, FPS, GRAY_LIGHT2, RED_LIGHT, SCREEN_RECT
 from enemy import Enemy
+from navmesh import NavMesh
+from player import Player
+from room import Box, Room
 
 
-class Game():
+class Game:
 
     running = True
 
@@ -34,12 +25,11 @@ class Game():
         # Set the height and width of the screen.
         self.screen = pg.display.set_mode(SCREEN_RECT.size)
         # Set the window title.
-        pg.display.set_caption('pysurvive')
+        pg.display.set_caption("pysurvive")
         # Turn off the mouse cursor.
         pg.mouse.set_visible(0)
         # Limit the number of allowed pygame events.
-        pg.event.set_allowed(
-            [QUIT, KEYDOWN, K_ESCAPE, MOUSEBUTTONDOWN, MOUSEBUTTONUP])
+        pg.event.set_allowed([QUIT, KEYDOWN, K_ESCAPE, MOUSEBUTTONDOWN, MOUSEBUTTONUP])
 
         self.fps_font = pg.font.SysFont("Arial", 14)
 
@@ -53,8 +43,8 @@ class Game():
         self.player_start_x = 200
         self.player_start_y = 200
         # Global game position. Offset for objects in the game world.
-        self.game_x = self.player_start_x - SCREEN_RECT.width//2
-        self.game_y = self.player_start_y - SCREEN_RECT.height//2
+        self.game_x = self.player_start_x - SCREEN_RECT.width // 2
+        self.game_y = self.player_start_y - SCREEN_RECT.height // 2
 
         #
         # Prepare game objects
@@ -64,14 +54,11 @@ class Game():
         self.screen_sprite = Screen(0, 0, SCREEN_RECT.size)
 
         # A sprite group that contains all room sprites..
-        self.room_sprites = pg.sprite.RenderPlain(
-            self.create_rooms()
-        )
+        self.room_sprites = pg.sprite.RenderPlain(self.create_rooms())
 
         # A sprite group that contains all wall and block sprites.
         self.block_sprites = pg.sprite.RenderPlain(
-            ((wall for wall in room.walls)
-             for room in self.room_sprites.sprites()),
+            ((wall for wall in room.walls) for room in self.room_sprites.sprites()),
             # Box(350, 325, 75, self.get_offset())
         )
 
@@ -102,8 +89,7 @@ class Game():
         # Player
         self.player = Player(self, self.player_start_x, self.player_start_y)
         # A sprite group that contains all player sprites.
-        self.player_sprites = pg.sprite.RenderPlain(
-            (self.player.feets, self.player))
+        self.player_sprites = pg.sprite.RenderPlain((self.player.feets, self.player))
 
     def start(self):
         """
@@ -148,12 +134,22 @@ class Game():
             self.block_render_sprites.empty()
             self.room_render_sprites.empty()
             # Find the new sprites.
-            self.block_render_sprites.add(pg.sprite.spritecollide(
-                self.screen_sprite, self.block_sprites, False,
-                collided=pg.sprite.collide_rect))
-            self.room_render_sprites.add(pg.sprite.spritecollide(
-                self.screen_sprite, self.room_sprites, False,
-                collided=pg.sprite.collide_rect))
+            self.block_render_sprites.add(
+                pg.sprite.spritecollide(
+                    self.screen_sprite,
+                    self.block_sprites,
+                    False,
+                    collided=pg.sprite.collide_rect,
+                )
+            )
+            self.room_render_sprites.add(
+                pg.sprite.spritecollide(
+                    self.screen_sprite,
+                    self.room_sprites,
+                    False,
+                    collided=pg.sprite.collide_rect,
+                )
+            )
 
             #
             # Updating
@@ -187,16 +183,18 @@ class Game():
             self.enemy_sprites.draw(self.screen)
 
             # Draw a cross as mouse cursor.
-            pg.draw.line(self.screen, BLUE,
-                         (self.player.get_aim_x() - 5,
-                          self.player.get_aim_y() - 5),
-                         (self.player.get_aim_x() + 5,
-                          self.player.get_aim_y() + 5))
-            pg.draw.line(self.screen, BLUE,
-                         (self.player.get_aim_x() - 5,
-                          self.player.get_aim_y() + 5),
-                         (self.player.get_aim_x() + 5,
-                          self.player.get_aim_y() - 5))
+            pg.draw.line(
+                self.screen,
+                BLUE,
+                (self.player.get_aim_x() - 5, self.player.get_aim_y() - 5),
+                (self.player.get_aim_x() + 5, self.player.get_aim_y() + 5),
+            )
+            pg.draw.line(
+                self.screen,
+                BLUE,
+                (self.player.get_aim_x() - 5, self.player.get_aim_y() + 5),
+                (self.player.get_aim_x() + 5, self.player.get_aim_y() - 5),
+            )
 
             # Debugging
             # Draw navmesh
@@ -232,47 +230,49 @@ class Game():
                 if num % 2 == 0:
                     return num
 
-        def get_room_door(options=('top', 'right', 'bottom', 'left')):
+        def get_room_door(options=("top", "right", "bottom", "left")):
             return options[random.randint(0, len(options) - 1)]
 
         def get_room_size(w_range=(300, 1000), h_range=(300, 1000)):
-            return (get_random_even(w_range[0], w_range[1]),
-                    get_random_even(h_range[0], h_range[1]))
+            return (
+                get_random_even(w_range[0], w_range[1]),
+                get_random_even(h_range[0], h_range[1]),
+            )
 
         def get_oppsite_door(door):
-            if 'top' in door:
-                return ['bottom']
-            elif 'bottom' in door:
-                return ['top']
-            elif 'left' in door:
-                return ['right']
-            elif 'right' in door:
-                return ['left']
+            if "top" in door:
+                return ["bottom"]
+            elif "bottom" in door:
+                return ["top"]
+            elif "left" in door:
+                return ["right"]
+            elif "right" in door:
+                return ["left"]
 
         def get_room_attributes(x_prev, y_prev, w_prev, h_prev, door_prev):
             w, h = get_room_size()
             # Handle position if room is on the top or bottom
             # of the previous room.
-            if 'top' in door_prev or 'bottom' in door_prev:
-                if 'top' in door_prev:
+            if "top" in door_prev or "bottom" in door_prev:
+                if "top" in door_prev:
                     y = y_prev - h
-                elif 'bottom' in door_prev:
+                elif "bottom" in door_prev:
                     y = y_prev + h_prev
                 if w > w_prev:
-                    x = x_prev - (w - w_prev)//2
+                    x = x_prev - (w - w_prev) // 2
                 else:
-                    x = x_prev + (w_prev - w)//2
+                    x = x_prev + (w_prev - w) // 2
             # Handle position if room is on the left or right
             # of the previous room.
-            elif 'left' in door_prev or 'right' in door_prev:
-                if 'left' in door_prev:
+            elif "left" in door_prev or "right" in door_prev:
+                if "left" in door_prev:
                     x = x_prev - w
-                elif 'right' in door_prev:
+                elif "right" in door_prev:
                     x = x_prev + w_prev
                 if h > h_prev:
-                    y = y_prev - (h - h_prev)//2
+                    y = y_prev - (h - h_prev) // 2
                 else:
-                    y = y_prev + (h_prev - h)//2
+                    y = y_prev + (h_prev - h) // 2
 
             # Create doors.
             doors = get_oppsite_door(door_prev)
@@ -301,7 +301,8 @@ class Game():
             while collision and attempts < 10:
                 collision = False
                 x, y, w, h, doors = get_room_attributes(
-                    x_prev, y_prev, w_prev, h_prev, door_prev)
+                    x_prev, y_prev, w_prev, h_prev, door_prev
+                )
                 room = Room(x, y, w, h, self.get_offset(), doors)
                 for r in rooms:
                     if pg.sprite.collide_rect(r, room):
@@ -342,8 +343,9 @@ class Game():
         _oversized_screen = pg.Rect(
             _offset[0] - SCREEN_RECT.width,
             _offset[1] - SCREEN_RECT.height,
-            SCREEN_RECT.width*3,
-            SCREEN_RECT.height*3)
+            SCREEN_RECT.width * 3,
+            SCREEN_RECT.height * 3,
+        )
         for point in self.unique_block_points:
             if _oversized_screen.collidepoint(point):
                 _block_points.append(point)
@@ -356,6 +358,6 @@ class Game():
         return fps_text
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     game = Game()
     game.start()

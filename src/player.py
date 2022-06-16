@@ -1,15 +1,12 @@
-import os
 import math
+import os
+
 import pygame as pg
 
-from config import (
-    SCREEN_RECT,
-    IMAGE_DIR,
-    GRAY_LIGHT,
-)
-from utils import load_image, load_sound
-from class_toolchain import Ray, Animation
+from class_toolchain import Animation, Ray
+from config import GRAY_LIGHT, IMAGE_DIR, SCREEN_RECT
 from flashlight import Flashlight
+from utils import load_image, load_sound
 
 
 class Player(Animation):
@@ -22,27 +19,27 @@ class Player(Animation):
     movement_index = 0
     movements = [
         {
-            'name': 'idle',
+            "name": "idle",
         },
         {
-            'name': 'move',
+            "name": "move",
         },
         {
-            'name': 'meleeattack',
+            "name": "meleeattack",
         },
         {
-            'name': 'shoot',
+            "name": "shoot",
         },
         {
-            'name': 'reload',
+            "name": "reload",
         },
     ]
     weapon_index = 1
     weapons = [
-        'knife',
-        'handgun',
-        'rifle',
-        'shotgun',
+        "knife",
+        "handgun",
+        "rifle",
+        "shotgun",
     ]
 
     feets = None
@@ -60,32 +57,42 @@ class Player(Animation):
         # Preloading images
         for movement in self.movements:
             _images = []
-            directory = IMAGE_DIR + 'player/' + \
-                self.weapons[self.weapon_index] + \
-                '/' + movement['name'] + '/'
+            directory = (
+                IMAGE_DIR
+                + "player/"
+                + self.weapons[self.weapon_index]
+                + "/"
+                + movement["name"]
+                + "/"
+            )
             if os.path.isdir(directory):
                 path, _, files = next(os.walk(directory))
                 for img in sorted(files):
-                    if 'spritesheet' not in img:
-                        image, _ = load_image(
-                            path + img, alpha=True, path=False)
-                        _images.append(pg.transform.scale(
-                            image, (image.get_rect().width // self.scale,
-                                    image.get_rect().height // self.scale)))
+                    if "spritesheet" not in img:
+                        image, _ = load_image(path + img, alpha=True, path=False)
+                        _images.append(
+                            pg.transform.scale(
+                                image,
+                                (
+                                    image.get_rect().width // self.scale,
+                                    image.get_rect().height // self.scale,
+                                ),
+                            )
+                        )
                 self.images.append(_images)
             else:
-                print('warn: Directory ' + directory + ' doesnt exists.')
+                print("warn: Directory " + directory + " doesnt exists.")
 
         # Preloading sounds
-        self.sound_shot = load_sound('shot/pistol.wav')
-        self.sound_reload = load_sound('reload/pistol.wav')
+        self.sound_shot = load_sound("shot/pistol.wav")
+        self.sound_reload = load_sound("reload/pistol.wav")
 
         self.image = self.images[self.movement_index][0]
         self.mask = pg.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         # Virtual position the image at the center of the screen
         # The position of image/rect used for drawing only
-        self.rect.center = (SCREEN_RECT.width//2, SCREEN_RECT.height//2)
+        self.rect.center = (SCREEN_RECT.width // 2, SCREEN_RECT.height // 2)
 
         self.feets = PlayerFeet(self)
         # Initialize the light (flashlight) with x and y from player
@@ -103,7 +110,7 @@ class Player(Animation):
         if self._next_update >= self._period:
             # Skipping frames if too much time has passed.
             # Since _next_update is bigger than period this is at least 1.
-            self.frame += int(self._next_update/self._period)
+            self.frame += int(self._next_update / self._period)
             # Time that already has passed since last update.
             self._next_update %= self._period
             # Limit the frame to the length of the image list.
@@ -146,8 +153,8 @@ class Player(Animation):
         :param angle: Rotation angle
         """
         self.image = pg.transform.rotate(
-            self.images[self.movement_index][self.frame],
-            (-1 * angle * (180 / math.pi)))
+            self.images[self.movement_index][self.frame], (-1 * angle * (180 / math.pi))
+        )
         # Recreating mask after every rotation
         self.mask = pg.mask.from_surface(self.image)
         # Keep the image on the same position.
@@ -189,10 +196,12 @@ class Player(Animation):
         self.sound_shot.play()
 
         # Create bullet object
-        self.bullet = Bullet(self.get_weapon_x(),
-                             self.get_weapon_y(), self.get_weapon_angle())
+        self.bullet = Bullet(
+            self.get_weapon_x(), self.get_weapon_y(), self.get_weapon_angle()
+        )
         self.bullet.intersect = self.bullet.get_intersection(
-            self.game.block_sprites.sprites())
+            self.game.block_sprites.sprites()
+        )
 
     def reload(self):
         # Set reload movement
@@ -270,8 +279,8 @@ class Player(Animation):
 
     def _collide_by_rect(self):
         block_hit_list = pg.sprite.spritecollide(
-            self, self.game.block_render_sprites, False,
-            collided=pg.sprite.collide_rect)
+            self, self.game.block_render_sprites, False, collided=pg.sprite.collide_rect
+        )
 
         return block_hit_list
 
@@ -280,11 +289,12 @@ class Player(Animation):
         # half of the speed in each direction.
         if direction[0] != 0 and direction[1] != 0:
             # Based on the 45° angle
-            return (-1 * direction[0] * abs(math.cos(math.pi/4)) * speed,
-                    -1 * direction[1] * abs(math.sin(math.pi/4)) * speed)
+            return (
+                -1 * direction[0] * abs(math.cos(math.pi / 4)) * speed,
+                -1 * direction[1] * abs(math.sin(math.pi / 4)) * speed,
+            )
         else:
-            return (-1 * direction[0] * speed,
-                    -1 * direction[1] * speed)
+            return (-1 * direction[0] * speed, -1 * direction[1] * speed)
 
     def get_x(self):
         """
@@ -327,56 +337,70 @@ class Player(Animation):
         Get the angle of the player position on the screen
         and the mouse cursor.
         """
-        return (math.atan2(
-            self.get_aim_y() - self.get_virt_y(),
-            self.get_aim_x() - self.get_virt_x())
-            + 2 * math.pi) % (2 * math.pi)
+        return (
+            math.atan2(
+                self.get_aim_y() - self.get_virt_y(),
+                self.get_aim_x() - self.get_virt_x(),
+            )
+            + 2 * math.pi
+        ) % (2 * math.pi)
 
     def get_weapon_angle(self):
         """
         Get the angle of the weapon position on the screen
         and the mouse cursor.
         """
-        return (math.atan2(
-            self.get_aim_y() - self.get_virt_weapon_y(),
-            self.get_aim_x() - self.get_virt_weapon_x())
-            + 2 * math.pi) % (2 * math.pi)
+        return (
+            math.atan2(
+                self.get_aim_y() - self.get_virt_weapon_y(),
+                self.get_aim_x() - self.get_virt_weapon_x(),
+            )
+            + 2 * math.pi
+        ) % (2 * math.pi)
 
     def get_weapon_x(self, offset1=13, offset2=15):
         """
         Get the real x coordinate of the weapon in the game world.
         """
         angle = self.get_angle()
-        return round(self.get_x()
-                     - math.cos(angle - math.pi/2) * offset1
-                     + math.cos(angle) * offset2)
+        return round(
+            self.get_x()
+            - math.cos(angle - math.pi / 2) * offset1
+            + math.cos(angle) * offset2
+        )
 
     def get_weapon_y(self, offset1=13, offset2=15):
         """
         Get the real y coordinate of the weapon in the game world.
         """
         angle = self.get_angle()
-        return round(self.get_y()
-                     - math.sin(angle - math.pi/2) * offset1
-                     + math.sin(angle) * offset2)
+        return round(
+            self.get_y()
+            - math.sin(angle - math.pi / 2) * offset1
+            + math.sin(angle) * offset2
+        )
 
     def get_virt_weapon_x(self, offset1=13, offset2=15):
         """
         Get the virtual x coordinate of weapon on the screen.
         """
         angle = self.get_angle()
-        return round(self.get_virt_x()
-                     - math.cos(angle - math.pi/2) * offset1
-                     + math.cos(angle) * offset2)
+        return round(
+            self.get_virt_x()
+            - math.cos(angle - math.pi / 2) * offset1
+            + math.cos(angle) * offset2
+        )
 
     def get_virt_weapon_y(self, offset1=13, offset2=15):
         """
         Get the virtual y coordinate of weapon on the screen.
         """
         angle = self.get_angle()
-        return round(self.get_virt_y()
-                     - math.sin(angle - math.pi/2) * offset1
-                     + math.sin(angle) * offset2)
+        return round(
+            self.get_virt_y()
+            - math.sin(angle - math.pi / 2) * offset1
+            + math.sin(angle) * offset2
+        )
 
 
 class PlayerFeet(Animation):
@@ -392,11 +416,11 @@ class PlayerFeet(Animation):
 
     feet_index = 0
     feets = [
-        'idle',
-        'walk',
-        'walk_left',
-        'walk_right',
-        'run',
+        "idle",
+        "walk",
+        "walk_left",
+        "walk_right",
+        "run",
     ]
 
     def __init__(self, _player):
@@ -405,33 +429,42 @@ class PlayerFeet(Animation):
 
         for feet in self.feets:
             _images = []
-            directory = IMAGE_DIR + 'player/feet/' + feet + '/'
+            directory = IMAGE_DIR + "player/feet/" + feet + "/"
             if os.path.isdir(directory):
                 path, _, files = next(os.walk(directory))
                 for img in sorted(files):
-                    if 'spritesheet' not in img:
-                        image, _ = load_image(
-                            path + img, alpha=True, path=False)
-                        _images.append(pg.transform.scale(
-                            image, (image.get_rect().width // self.scale,
-                                    image.get_rect().height // self.scale)))
+                    if "spritesheet" not in img:
+                        image, _ = load_image(path + img, alpha=True, path=False)
+                        _images.append(
+                            pg.transform.scale(
+                                image,
+                                (
+                                    image.get_rect().width // self.scale,
+                                    image.get_rect().height // self.scale,
+                                ),
+                            )
+                        )
                 self.images.append(_images)
             else:
-                print('warn: Directory ' + directory + ' doesnt exists.')
+                print("warn: Directory " + directory + " doesnt exists.")
 
         self.image = self.images[self.feet_index][self.frame]
         self.rect = self.image.get_rect()
         self.rect.center = (
-            round(self.player.get_virt_x()
-                  - math.cos(self.player.get_weapon_angle()) *
-                  self.feet_offset_px
-                  - math.cos(self.player.get_weapon_angle() - math.pi/2)
-                  * self.feet_offset_px//2),
-            round(self.player.get_virt_y()
-                  - math.sin(self.player.get_weapon_angle()) *
-                  self.feet_offset_px
-                  - math.sin(self.player.get_weapon_angle() - math.pi/2)
-                  * self.feet_offset_px//2)
+            round(
+                self.player.get_virt_x()
+                - math.cos(self.player.get_weapon_angle()) * self.feet_offset_px
+                - math.cos(self.player.get_weapon_angle() - math.pi / 2)
+                * self.feet_offset_px
+                // 2
+            ),
+            round(
+                self.player.get_virt_y()
+                - math.sin(self.player.get_weapon_angle()) * self.feet_offset_px
+                - math.sin(self.player.get_weapon_angle() - math.pi / 2)
+                * self.feet_offset_px
+                // 2
+            ),
         )
 
     def update(self, dt, direction):
@@ -445,7 +478,7 @@ class PlayerFeet(Animation):
         if self._next_update >= self._period:
             # Skipping frames if too much time has passed.
             # Since _next_update is bigger than period this is at least 1.
-            self.frame += int(self._next_update/self._period)
+            self.frame += int(self._next_update / self._period)
             # Time that already has passed since last update.
             self._next_update %= self._period
             # Limit the frame to the length of the image list.
@@ -460,20 +493,22 @@ class PlayerFeet(Animation):
         Move the player feets in the specific direction.
         """
 
+        self.rect.center = (self.player.get_virt_x(), self.player.get_virt_y())
         self.rect.center = (
-            self.player.get_virt_x(),
-            self.player.get_virt_y())
-        self.rect.center = (
-            round(self.player.get_virt_x()
-                  - math.cos(self.player.get_weapon_angle()) *
-                  self.feet_offset_px
-                  - math.cos(self.player.get_weapon_angle() - math.pi/2)
-                  * self.feet_offset_px//2),
-            round(self.player.get_virt_y()
-                  - math.sin(self.player.get_weapon_angle()) *
-                  self.feet_offset_px
-                  - math.sin(self.player.get_weapon_angle() - math.pi/2)
-                  * self.feet_offset_px//2)
+            round(
+                self.player.get_virt_x()
+                - math.cos(self.player.get_weapon_angle()) * self.feet_offset_px
+                - math.cos(self.player.get_weapon_angle() - math.pi / 2)
+                * self.feet_offset_px
+                // 2
+            ),
+            round(
+                self.player.get_virt_y()
+                - math.sin(self.player.get_weapon_angle()) * self.feet_offset_px
+                - math.sin(self.player.get_weapon_angle() - math.pi / 2)
+                * self.feet_offset_px
+                // 2
+            ),
         )
 
         self.rect.move_ip(*[d * self.player.speed for d in direction])
@@ -497,7 +532,8 @@ class PlayerFeet(Animation):
         # at the wrong direction.
         self.image = pg.transform.rotate(
             self.images[self.feet_index][self.frame],
-            (-1 * self.player.get_weapon_angle() * (180 / math.pi)))
+            (-1 * self.player.get_weapon_angle() * (180 / math.pi)),
+        )
         # Keep the image on the same position.
         # Save its current center.
         x, y = self.rect.center
@@ -526,16 +562,21 @@ class Bullet(Ray):
         if self.intersect:
             if self.impact:
                 # Draw the impact
-                pg.draw.circle(screen, (255, 0, 0),
-                               (self.intersect['x'] - offset[0],
-                                self.intersect['y'] - offset[1]), 2)
+                pg.draw.circle(
+                    screen,
+                    (255, 0, 0),
+                    (self.intersect["x"] - offset[0], self.intersect["y"] - offset[1]),
+                    2,
+                )
             else:
                 # Draw the trail of the bullet
-                pg.draw.line(screen, GRAY_LIGHT,
-                             (self.x0 - offset[0] + math.cos(self.angle)
-                              * self.trail_offset,
-                              self.y0 - offset[1] + math.sin(self.angle)
-                              * self.trail_offset),
-                             (self.intersect['x'] - offset[0],
-                              self.intersect['y'] - offset[1]))
+                pg.draw.line(
+                    screen,
+                    GRAY_LIGHT,
+                    (
+                        self.x0 - offset[0] + math.cos(self.angle) * self.trail_offset,
+                        self.y0 - offset[1] + math.sin(self.angle) * self.trail_offset,
+                    ),
+                    (self.intersect["x"] - offset[0], self.intersect["y"] - offset[1]),
+                )
                 self.impact = True

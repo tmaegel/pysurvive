@@ -1,8 +1,8 @@
 import pygame as pg
 
-ASSETS_DIR = 'assets/'
-IMAGE_DIR = ASSETS_DIR + 'img/'
-SOUND_DIR = ASSETS_DIR + 'sound/'
+ASSETS_DIR = "assets/"
+IMAGE_DIR = ASSETS_DIR + "img/"
+SOUND_DIR = ASSETS_DIR + "sound/"
 SCREEN_RECT = pg.Rect(0, 0, 1024, 768)
 
 FPS = 30  # frame per seconds
