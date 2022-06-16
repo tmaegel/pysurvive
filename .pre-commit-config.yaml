@@ -1,0 +1,71 @@
+---
+exclude: (^static/|^staticfiles/|^manage.py|^setup.py|^instance)
+fail_fast: true
+
+repos:
+  - repo: "https://github.com/pre-commit/pre-commit-hooks"
+    rev: "v4.1.0"
+    hooks:
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-byte-order-marker
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: pretty-format-json
+        args: ["--autofix", "--indent=4", "--no-sort-keys"]
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-xml
+      - id: requirements-txt-fixer
+      - id: debug-statements
+      - id: destroyed-symlinks
+      - id: detect-private-key
+      # - id: end-of-file-fixer
+      - id: fix-encoding-pragma
+        args: ["--pragma", "# coding=utf-8"]
+      - id: trailing-whitespace
+
+  - repo: "https://github.com/psf/black"
+    rev: "22.3.0"
+    hooks:
+      - id: black
+
+  - repo: "https://github.com/PyCQA/isort"
+    rev: "5.10.1"
+    hooks:
+      - id: isort
+
+  - repo: "https://github.com/PyCQA/flake8"
+    rev: "4.0.1"
+    hooks:
+      - id: flake8
+
+  - repo: local
+    hooks:
+      - id: pylint
+        name: pylint
+        entry: pylint
+        language: system
+        types: [python]
+
+      - id: pytest
+        name: pytest
+        stages: [commit]
+        language: system
+        entry: coverage run -m pytest
+        types: [python]
+        always_run: true
+        pass_filenames: false
+
+      - id: pytest-cov
+        name: pytest
+        stages: [commit]
+        language: system
+        entry: coverage report
+        types: [python]
+        always_run: true
+        pass_filenames: false
