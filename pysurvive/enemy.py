@@ -7,6 +7,7 @@ import pygame as pg
 
 from pysurvive.class_toolchain import Animation
 from pysurvive.config import IMAGE_DIR
+from pysurvive.logger import logger
 from pysurvive.utils import load_image
 
 
@@ -72,7 +73,7 @@ class Enemy(Animation):
                         )
                 self.images.append(_images)
             else:
-                print("warn: Directory " + directory + " doesnt exists.")
+                logger.warning("Directory %s doesnt exists.", directory)
 
         self.image = self.images[self.movement_index][0]
         self.mask = pg.mask.from_surface(self.image)

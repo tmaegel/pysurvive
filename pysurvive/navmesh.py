@@ -2,6 +2,8 @@
 # coding=utf-8
 import triangle as tr
 
+from pysurvive.logger import logger
+
 
 class NavMesh:
 
@@ -120,7 +122,7 @@ class NavMesh:
             return path
         # One or both points are outside all triangles
         elif not start_tri or not end_tri:
-            print("warn: start and/or end point are outside of triangle.")
+            logger.warning("Start and/or end point are outside of triangle.")
         # Both points are located on different triangles
         else:
             open_list.append(start_node)

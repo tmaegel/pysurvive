@@ -309,7 +309,7 @@ class Game:
                     if pg.sprite.collide_rect(r, room):
                         collision = True
                         attempts += 1
-                        print("Collide! Create new room.")
+                        logger.info("Collide! Create new room.")
                         break
 
             if not collision:

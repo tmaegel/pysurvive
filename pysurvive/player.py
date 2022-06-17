@@ -8,6 +8,7 @@ import pygame as pg
 from pysurvive.class_toolchain import Animation, Ray
 from pysurvive.config import GRAY_LIGHT, IMAGE_DIR, SCREEN_RECT
 from pysurvive.flashlight import Flashlight
+from pysurvive.logger import logger
 from pysurvive.utils import load_image, load_sound
 
 
@@ -83,7 +84,7 @@ class Player(Animation):
                         )
                 self.images.append(_images)
             else:
-                print("warn: Directory " + directory + " doesnt exists.")
+                logger.warning("Directory %s doesnt exists.", directory)
 
         # Preloading sounds
         self.sound_shot = load_sound("shot/pistol.wav")
@@ -447,7 +448,7 @@ class PlayerFeet(Animation):
                         )
                 self.images.append(_images)
             else:
-                print("warn: Directory " + directory + " doesnt exists.")
+                logger.warning("Directory %s doesnt exists.", directory)
 
         self.image = self.images[self.feet_index][self.frame]
         self.rect = self.image.get_rect()

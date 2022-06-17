@@ -43,7 +43,7 @@ commands =
 
 [tool.pylint.MASTER]
 ignore-paths= ["tests/*"]
-init-hook = "import sys; sys.path.append('pysurvive/')"
+init-hook = "import sys; sys.path.append('pysurvive')"
 
 [tool.pylint.FORMAT]
 max-line-length = 88
