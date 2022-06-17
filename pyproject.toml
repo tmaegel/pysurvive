@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [tool.pytest]
 testpaths = "tests"
 
@@ -28,6 +32,7 @@ envlist = py39,py310
 
 [testenv]
 deps =
+  pygame >= 2.1
   pytest >= 7,<8
   coverage[toml] >= 6,<7
 commands =

@@ -61,7 +61,7 @@ class Enemy(Animation):
                 path, _, files = next(os.walk(directory))
                 for img in sorted(files):
                     if "spritesheet" not in img:
-                        image, _ = load_image(path + img, alpha=True, path=False)
+                        image, _ = load_image(f"{path}/{img}", alpha=True, path=False)
                         _images.append(
                             pg.transform.scale(
                                 image,

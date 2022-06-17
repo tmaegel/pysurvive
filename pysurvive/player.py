@@ -2,6 +2,7 @@
 # coding=utf-8
 import math
 import os
+from enum import Enum, unique
 
 import pygame as pg
 
@@ -12,42 +13,92 @@ from pysurvive.logger import logger
 from pysurvive.utils import load_image, load_sound
 
 
+@unique
+class MovementState(Enum):
+    IDLE = 0
+    MOVE = 1
+    MELEEATTACK = 2
+    SHOOT = 3
+    RELOAD = 4
+
+
+@unique
+class WeaponsState(Enum):
+    KNIFE = 0
+    HANDGUN = 1
+    RIFLE = 2
+    SHOTGUN = 3
+
+
+class RotatableImage:
+    def __init__(self, filename: str) -> None:
+        self.filename = filename
+        self._load_image(self.filename)
+        self._scale_image()
+
+    def _load_image(self, filename: str) -> None:
+        """Load image from filesystem."""
+        logger.debug("Loading image from file %s.", filename)
+        self.image, _ = load_image(filename, alpha=True, path=False)
+
+    def _scale_image(self, scale: int = 4) -> None:
+        """Scaling image down."""
+        self.image = pg.transform.scale(
+            self.image,
+            (
+                self.image.get_rect().width // scale,
+                self.image.get_rect().height // scale,
+            ),
+        )
+
+    def rotate(self, angle: int) -> pg.Surface:
+        """Return rotated surfaces based on the original one."""
+        return pg.transform.rotate(
+            self.image,
+            (-1 * angle * (180 / math.pi)),
+        )
+
+
+class PlayerImages:
+    def __init__(self) -> None:
+        self.images = []
+        self._load_images()
+
+    def __setitem__(self, index, data):
+        self.images[index] = data
+
+    def __getitem__(self, index):
+        return self.images[index]
+
+    def _load_images(self) -> None:
+        """Preloading images for each movement state."""
+        # @todo: Loading other weapon-movement images too.
+        for movement in MovementState:
+            _images = []
+            directory = (
+                f"{IMAGE_DIR}/player/"
+                + f"{WeaponsState.HANDGUN.name.lower()}/{movement.name.lower()}/"
+            )
+            if os.path.isdir(directory):
+                path, _, files = next(os.walk(directory))
+                logger.info("Loading images from path %s.", path)
+                for img in sorted(files):
+                    if "spritesheet" not in img:
+                        _images.append(RotatableImage(f"{path}/{img}"))
+                self.images.append(_images)
+            else:
+                logger.warning("Directory %s doesnt exists.", directory)
+
+
 class Player(Animation):
 
-    scale = 4
     speed = 6
-
-    # Define the single movement states.
-    # Each movement state is represented by a dictionary.
-    movement_index = 0
-    movements = [
-        {
-            "name": "idle",
-        },
-        {
-            "name": "move",
-        },
-        {
-            "name": "meleeattack",
-        },
-        {
-            "name": "shoot",
-        },
-        {
-            "name": "reload",
-        },
-    ]
-    weapon_index = 1
-    weapons = [
-        "knife",
-        "handgun",
-        "rifle",
-        "shotgun",
-    ]
-
     feets = None
     light = None
     bullet = None
+
+    movement_state = MovementState.IDLE
+    weapon_state = WeaponsState.HANDGUN
 
     def __init__(self, _game, _x, _y):
         Animation.__init__(self)
@@ -57,56 +108,31 @@ class Player(Animation):
         self.x = _x
         self.y = _y
 
-        # Preloading images
-        for movement in self.movements:
-            _images = []
-            directory = (
-                IMAGE_DIR
-                + "player/"
-                + self.weapons[self.weapon_index]
-                + "/"
-                + movement["name"]
-                + "/"
-            )
-            if os.path.isdir(directory):
-                path, _, files = next(os.walk(directory))
-                for img in sorted(files):
-                    if "spritesheet" not in img:
-                        image, _ = load_image(path + img, alpha=True, path=False)
-                        _images.append(
-                            pg.transform.scale(
-                                image,
-                                (
-                                    image.get_rect().width // self.scale,
-                                    image.get_rect().height // self.scale,
-                                ),
-                            )
-                        )
-                self.images.append(_images)
-            else:
-                logger.warning("Directory %s doesnt exists.", directory)
-
         # Preloading sounds
         self.sound_shot = load_sound("shot/pistol.wav")
         self.sound_reload = load_sound("reload/pistol.wav")
 
-        self.image = self.images[self.movement_index][0]
+        # Contains the original (scaled only) images of the player object.
+        self.images = PlayerImages()
+        self.image = self.get_image(frame=0)
         self.mask = pg.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         # Virtual position the image at the center of the screen
         # The position of image/rect used for drawing only
         self.rect.center = (SCREEN_RECT.width // 2, SCREEN_RECT.height // 2)
 
-        self.feets = PlayerFeet(self)
+        # self.feets = PlayerFeet(self)
         # Initialize the light (flashlight) with x and y from player
         # The initial coordinates are used for drawing only.
         # self.light = Flashlight(self, self.get_x(), self.get_y())
 
-    def update(self, dt, direction):
-        """
-        Update the player object.
-        """
+    def get_image(self, frame: int) -> pg.Surface:
+        # @todo: Is there are a more pythonic way?
+        # __get__, __call__ or __getattr__ ?
+        return self.images[self.movement_state.value][frame].image
 
+    def update(self, dt, direction):
+        """Update the player object."""
         # Accumulate time since last update.
         self._next_update += dt
         # If more time has passed as a period, then we need to update.
@@ -117,9 +143,9 @@ class Player(Animation):
             # Time that already has passed since last update.
             self._next_update %= self._period
             # Limit the frame to the length of the image list.
-            self.frame %= len(self.images[self.movement_index])
+            self.frame %= len(self.images[self.movement_state.value])
 
-            # Handle the different sprites for animation here
+            # Handle the different images for animation here
             self.animate(direction)
 
         # @todo: Not time based yet
@@ -136,10 +162,7 @@ class Player(Animation):
         # self.light.update(self.get_x(), self.get_y())
 
     def move(self, direction, speed):
-        """
-        Move the player in the specific direction.
-        """
-
+        """Move the player in the specific direction."""
         dx, dy = self._get_move_vector(direction, speed)
         self.game.set_offset(dx, dy)
 
@@ -149,15 +172,12 @@ class Player(Animation):
 
     def rotate(self, angle):
         """
-        Rotate the player object on the center.
-        Need to negate the result, if the image starts
-        at the wrong direction.
+        Rotate the player object on the center. Need to negate the
+        result, if the image starts at the wrong direction.
 
         :param angle: Rotation angle
         """
-        self.image = pg.transform.rotate(
-            self.images[self.movement_index][self.frame], (-1 * angle * (180 / math.pi))
-        )
+        self.image = self.images[self.movement_state.value][self.frame].rotate(angle)
         # Recreating mask after every rotation
         self.mask = pg.mask.from_surface(self.image)
         # Keep the image on the same position.
@@ -169,33 +189,36 @@ class Player(Animation):
         self.rect.center = (x, y)
 
     def animate(self, direction):
-        if self.frame == len(self.images[self.movement_index]) - 1:
+        if self.frame == len(self.images[self.movement_state.value]) - 1:
             # Rest movement after attacking, shooting or reloading.
             # If attacking
-            if self.movement_index == 2:
-                self.movement_index = 0
+            if self.movement_state == MovementState.MELEEATTACK:
+                self.movement_state = MovementState.IDLE
             # If shooting
-            elif self.movement_index == 3:
-                self.movement_index = 0
+            elif self.movement_state == MovementState.SHOOT:
+                self.movement_state = MovementState.IDLE
                 # del self.bullet
             # If reloading
-            elif self.movement_index == 4:
-                self.movement_index = 0
+            elif self.movement_state == MovementState.RELOAD:
+                self.movement_state = MovementState.IDLE
 
         # If not attacking, shooting and reloading
-        if self.movement_index == 0 or self.movement_index == 1:
+        if (
+            self.movement_state == MovementState.IDLE
+            or self.movement_state == MovementState.MOVE
+        ):
             if direction[0] != 0 or direction[1] != 0:
                 # Move state
-                self.movement_index = 1
+                self.movement_state = MovementState.MOVE
             elif direction[0] == 0 and direction[1] == 0:
                 # Idle state
-                self.movement_index = 0
+                self.movement_state = MovementState.IDLE
 
     def shot(self) -> None:
         # Set shot movement
         self.shooting = True
         self.frame = 0
-        self.movement_index = 3
+        self.movement_state = MovementState.SHOOT
         self.sound_shot.play()
 
         # Create bullet object
@@ -210,7 +233,7 @@ class Player(Animation):
         # Set reload movement
         self.reloading = True
         self.frame = 0
-        self.movement_index = 4
+        self.movement_state = MovementState.RELOAD
         self.sound_reload.play()
 
     def collide_by_move(self, direction, speed):
@@ -287,9 +310,11 @@ class Player(Animation):
 
         return block_hit_list
 
-    def _get_move_vector(self, direction, speed):
-        # If the player moves diagonal add only the
-        # half of the speed in each direction.
+    def _get_move_vector(self, direction: list[int], speed: int) -> tuple[int]:
+        """
+        If the player moves diagonal add only the half of the speed
+        in each direction.
+        """
         if direction[0] != 0 and direction[1] != 0:
             # Based on the 45° angle
             return (
@@ -298,43 +323,43 @@ class Player(Animation):
             )
         return (-1 * direction[0] * speed, -1 * direction[1] * speed)
 
-    def get_x(self):
+    def get_x(self) -> int:
         """
         Get the real x coordinate of the player in the game world.
         """
         return self.x
 
-    def get_y(self):
+    def get_y(self) -> int:
         """
         Get the real y coordinate of the player in the game world.
         """
         return self.y
 
-    def get_virt_x(self):
+    def get_virt_x(self) -> int:
         """
         Get the virtual x coordinate of the player on the screen.
         """
         return self.rect.centerx
 
-    def get_virt_y(self):
+    def get_virt_y(self) -> int:
         """
         Get the virtual y coordinate of the player on the screen.
         """
         return self.rect.centery
 
-    def get_aim_x(self):
+    def get_aim_x(self) -> int:
         """
         Get the x coordinate of the mouse cursor.
         """
         return pg.mouse.get_pos()[0]
 
-    def get_aim_y(self):
+    def get_aim_y(self) -> int:
         """
         Get the y coordinate of the mouse cursor.
         """
         return pg.mouse.get_pos()[1]
 
-    def get_angle(self):
+    def get_angle(self) -> float:
         """
         Get the angle of the player position on the screen
         and the mouse cursor.
@@ -347,7 +372,7 @@ class Player(Animation):
             + 2 * math.pi
         ) % (2 * math.pi)
 
-    def get_weapon_angle(self):
+    def get_weapon_angle(self) -> float:
         """
         Get the angle of the weapon position on the screen
         and the mouse cursor.
@@ -360,7 +385,7 @@ class Player(Animation):
             + 2 * math.pi
         ) % (2 * math.pi)
 
-    def get_weapon_x(self, offset1=13, offset2=15):
+    def get_weapon_x(self, offset1: int = 13, offset2: int = 15) -> int:
         """
         Get the real x coordinate of the weapon in the game world.
         """
@@ -371,7 +396,7 @@ class Player(Animation):
             + math.cos(angle) * offset2
         )
 
-    def get_weapon_y(self, offset1=13, offset2=15):
+    def get_weapon_y(self, offset1: int = 13, offset2: int = 15) -> int:
         """
         Get the real y coordinate of the weapon in the game world.
         """
@@ -382,7 +407,7 @@ class Player(Animation):
             + math.sin(angle) * offset2
         )
 
-    def get_virt_weapon_x(self, offset1=13, offset2=15):
+    def get_virt_weapon_x(self, offset1: int = 13, offset2: int = 15) -> int:
         """
         Get the virtual x coordinate of weapon on the screen.
         """
@@ -393,7 +418,7 @@ class Player(Animation):
             + math.cos(angle) * offset2
         )
 
-    def get_virt_weapon_y(self, offset1=13, offset2=15):
+    def get_virt_weapon_y(self, offset1: int = 13, offset2: int = 15) -> int:
         """
         Get the virtual y coordinate of weapon on the screen.
         """

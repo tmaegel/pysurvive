@@ -10,7 +10,7 @@ from pysurvive.config import FPS
 
 class Animation(pg.sprite.Sprite):
     def __init__(self) -> None:
-        # call Sprite initializer
+        # Call Sprite initializer
         pg.sprite.Sprite.__init__(self)
         # Contains a list of images/frames.
         self.images = []
