@@ -209,7 +209,7 @@ class Node:
         # F is the total cost of the node.
         self.f = 0
 
-    def reset(self):
+    def reset(self) -> None:
         self.parent = None
 
     def __eq__(self, other):

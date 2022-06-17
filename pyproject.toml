@@ -3,7 +3,7 @@ testpaths = "tests"
 
 [tool.coverage.run]
 branch = true
-source = ["src"]
+source = ["pysurvive"]
 omit = ["tests/*"]
 
 [tool.coverage.report]
@@ -43,10 +43,11 @@ commands =
 
 [tool.pylint.MASTER]
 ignore-paths= ["tests/*"]
+init-hook = "import sys; sys.path.append('pysurvive/')"
 
 [tool.pylint.FORMAT]
 max-line-length = 88
-disable = ["R0903", "R0913", "C0103", "C0114", "C0115", "C0116", "C0411"]
+disable = ["R0902", "R0903", "R0913", "R0913","C0103", "C0114", "C0115", "C0116", "C0411"]
 
 [tool.isort]
 skip_glob = "venv/*"

@@ -5,19 +5,19 @@ import random
 import pygame as pg
 from pygame.locals import K_ESCAPE, KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP, QUIT
 
-from class_toolchain import Screen
-from config import BLUE, COLORKEY, FPS, GRAY_LIGHT2, RED_LIGHT, SCREEN_RECT
-from enemy import Enemy
-from navmesh import NavMesh
-from player import Player
-from room import Box, Room
+from .class_toolchain import Screen
+from .config import BLUE, COLORKEY, FPS, GRAY_LIGHT2, RED_LIGHT, SCREEN_RECT
+from .enemy import Enemy
+from .navmesh import NavMesh
+from .player import Player
+from .room import Box, Room
 
 
 class Game:
 
     running = True
 
-    def __init__(self):
+    def __init__(self) -> None:
         pg.init()
 
         self.clock = pg.time.Clock()
@@ -90,7 +90,7 @@ class Game:
         # A sprite group that contains all player sprites.
         self.player_sprites = pg.sprite.RenderPlain((self.player.feets, self.player))
 
-    def start(self):
+    def start(self) -> None:
         """
         This function is called when the program starts.
 
@@ -238,14 +238,14 @@ class Game:
                 get_random_even(h_range[0], h_range[1]),
             )
 
-        def get_oppsite_door(door):
+        def get_oppsite_door(door) -> list[str]:
             if "top" in door:
                 return ["bottom"]
-            elif "bottom" in door:
+            if "bottom" in door:
                 return ["top"]
-            elif "left" in door:
+            if "left" in door:
                 return ["right"]
-            elif "right" in door:
+            if "right" in door:
                 return ["left"]
 
         def get_room_attributes(x_prev, y_prev, w_prev, h_prev, door_prev):
@@ -355,8 +355,3 @@ class Game:
         fps = str(int(self.clock.get_fps()))
         fps_text = self.fps_font.render(fps, 1, RED_LIGHT)
         return fps_text
-
-
-if __name__ == "__main__":
-    game = Game()
-    game.start()

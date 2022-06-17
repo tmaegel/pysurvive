@@ -1,7 +1,7 @@
-SRC_PATH = src
+SRC_PATH = pysurvive
 
 run:
-	python $(SRC_PATH)/main.py
+	python -m $(SRC_PATH)
 
 test:
 	coverage run -m pytest

@@ -4,12 +4,12 @@ import json
 
 import pygame as pg
 
-from config import COLORKEY
-from utils import load_image
+from .config import COLORKEY
+from .utils import load_image
 
 
 class Spritesheet:
-    def __init__(self, filename):
+    def __init__(self, filename: str) -> None:
         self.filename = filename
         self.sprite_sheet, _ = load_image(filename, alpha=True, path=False)
         self.meta_data = self.filename.replace("png", "json")

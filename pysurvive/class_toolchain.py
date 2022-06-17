@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 # coding=utf-8
 import math
+from typing import Optional
 
 import pygame as pg
 
-from config import FPS
+from .config import FPS
 
 
 class Animation(pg.sprite.Sprite):
-    def __init__(self):
+    def __init__(self) -> None:
         # call Sprite initializer
         pg.sprite.Sprite.__init__(self)
         # Contains a list of images/frames.
@@ -28,7 +29,7 @@ class Screen(pg.sprite.Sprite):
     are visible on the screen.
     """
 
-    def __init__(self, _x, _y, _size):
+    def __init__(self, _x, _y, _size) -> None:
         pg.sprite.Sprite.__init__(self)
 
         self.image = pg.Surface(_size)
@@ -44,7 +45,7 @@ class LineSegment:
     of the block. So each block has 4 line segments.
     """
 
-    def __init__(self, _x1, _y1, _x2, _y2):
+    def __init__(self, _x1, _y1, _x2, _y2) -> None:
         self.x1 = _x1
         self.y1 = _y1
         self.x2 = _x2
@@ -69,7 +70,7 @@ class Block(pg.sprite.Sprite):
         _height,
         _offset,
         _sides=("top", "right", "bottom", "left"),
-    ):
+    ) -> None:
         pg.sprite.Sprite.__init__(self)
         self.x = _x
         self.y = _y
@@ -120,12 +121,12 @@ class Block(pg.sprite.Sprite):
         for seg in self.segments:
             self.points += seg.get_points()
 
-    def update(self, offset):
+    def update(self, offset) -> None:
         # Update x, y position of the rect for drawing only.
         self.rect.x = round(self.x - offset[0])
         self.rect.y = round(self.y - offset[1])
 
-    def get_points(self):
+    def get_points(self) -> tuple[int]:
         return self.points
 
     def get_center(self):
@@ -136,7 +137,7 @@ class Ray:
 
     intersect = None
 
-    def __init__(self, _x, _y, _angle):
+    def __init__(self, _x, _y, _angle) -> None:
         # x, y start coordinates of the ray.
         self.x0 = _x
         self.y0 = _y
@@ -180,7 +181,7 @@ class Ray:
 
         return result_intersect
 
-    def calc_intersection(self, segment):
+    def calc_intersection(self, segment) -> Optional[dict[str, int]]:
         """
         Calculate the intersection with line segment and this ray.
 

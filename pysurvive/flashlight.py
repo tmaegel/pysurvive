@@ -4,8 +4,8 @@ import math
 
 import pygame as pg
 
-from class_toolchain import Ray
-from config import COLORKEY, RED_LIGHT
+from .class_toolchain import Ray
+from .config import COLORKEY, RED_LIGHT
 
 
 class Flashlight:

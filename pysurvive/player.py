@@ -5,10 +5,10 @@ import os
 
 import pygame as pg
 
-from class_toolchain import Animation, Ray
-from config import GRAY_LIGHT, IMAGE_DIR, SCREEN_RECT
-from flashlight import Flashlight
-from utils import load_image, load_sound
+from .class_toolchain import Animation, Ray
+from .config import GRAY_LIGHT, IMAGE_DIR, SCREEN_RECT
+from .flashlight import Flashlight
+from .utils import load_image, load_sound
 
 
 class Player(Animation):
@@ -190,7 +190,7 @@ class Player(Animation):
                 # Idle state
                 self.movement_index = 0
 
-    def shot(self):
+    def shot(self) -> None:
         # Set shot movement
         self.shooting = True
         self.frame = 0
@@ -205,7 +205,7 @@ class Player(Animation):
             self.game.block_sprites.sprites()
         )
 
-    def reload(self):
+    def reload(self) -> None:
         # Set reload movement
         self.reloading = True
         self.frame = 0
@@ -252,7 +252,7 @@ class Player(Animation):
         player_image = self.image
         player_mask = self.mask
 
-        def reset():
+        def reset() -> None:
             self.image = player_image
             self.mask = player_mask
             # Keep the image on the same position.
@@ -295,8 +295,7 @@ class Player(Animation):
                 -1 * direction[0] * abs(math.cos(math.pi / 4)) * speed,
                 -1 * direction[1] * abs(math.sin(math.pi / 4)) * speed,
             )
-        else:
-            return (-1 * direction[0] * speed, -1 * direction[1] * speed)
+        return (-1 * direction[0] * speed, -1 * direction[1] * speed)
 
     def get_x(self):
         """
@@ -523,7 +522,7 @@ class PlayerFeet(Animation):
             self.frame = 0
             self.feet_index = 0
 
-    def rotate(self):
+    def rotate(self) -> None:
         """
         Rotate the player feets object on the center.
         Need to negate the result, if the image starts

@@ -2,8 +2,8 @@
 # coding=utf-8
 import pygame as pg
 
-from class_toolchain import Block
-from config import BLACK, GRAY_LIGHT2, GRAY_LIGHT3
+from .class_toolchain import Block
+from .config import BLACK, GRAY_LIGHT2, GRAY_LIGHT3
 
 
 class Room(pg.sprite.Sprite):
