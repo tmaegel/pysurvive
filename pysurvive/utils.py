@@ -7,8 +7,8 @@ from typing import Tuple, Union
 import pygame as pg
 from pygame.locals import RLEACCEL
 
-from .config import IMAGE_DIR, SOUND_DIR
-from .logger import logger
+from pysurvive.config import IMAGE_DIR, SOUND_DIR
+from pysurvive.logger import logger
 
 
 class NoneSound:

@@ -5,9 +5,9 @@ import os
 
 import pygame as pg
 
-from .class_toolchain import Animation
-from .config import IMAGE_DIR
-from .utils import load_image
+from pysurvive.class_toolchain import Animation
+from pysurvive.config import IMAGE_DIR
+from pysurvive.utils import load_image
 
 
 class Enemy(Animation):

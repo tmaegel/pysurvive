@@ -5,12 +5,13 @@ import random
 import pygame as pg
 from pygame.locals import K_ESCAPE, KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP, QUIT
 
-from .class_toolchain import Screen
-from .config import BLUE, COLORKEY, FPS, GRAY_LIGHT2, RED_LIGHT, SCREEN_RECT
-from .enemy import Enemy
-from .navmesh import NavMesh
-from .player import Player
-from .room import Box, Room
+from pysurvive.class_toolchain import Screen
+from pysurvive.config import BLUE, COLORKEY, FPS, GRAY_LIGHT2, RED_LIGHT, SCREEN_RECT
+from pysurvive.enemy import Enemy
+from pysurvive.logger import logger
+from pysurvive.navmesh import NavMesh
+from pysurvive.player import Player
+from pysurvive.room import Box, Room
 
 
 class Game:
@@ -18,6 +19,7 @@ class Game:
     running = True
 
     def __init__(self) -> None:
+        logger.info("Starting...")
         pg.init()
 
         self.clock = pg.time.Clock()
@@ -355,3 +357,11 @@ class Game:
         fps = str(int(self.clock.get_fps()))
         fps_text = self.fps_font.render(fps, 1, RED_LIGHT)
         return fps_text
+
+
+def main() -> None:
+    game = Game()
+    game.start()
+
+
+main()

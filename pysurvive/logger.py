@@ -4,7 +4,7 @@ import logging
 import sys
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
-handler.setFormatter(logging.Formatter("%(name)10s - %(levelname)8s - %(message)s"))
+handler.setFormatter(logging.Formatter("%(levelname)s - %(message)s"))
 logger.addHandler(handler)

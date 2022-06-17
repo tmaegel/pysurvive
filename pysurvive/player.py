@@ -5,10 +5,10 @@ import os
 
 import pygame as pg
 
-from .class_toolchain import Animation, Ray
-from .config import GRAY_LIGHT, IMAGE_DIR, SCREEN_RECT
-from .flashlight import Flashlight
-from .utils import load_image, load_sound
+from pysurvive.class_toolchain import Animation, Ray
+from pysurvive.config import GRAY_LIGHT, IMAGE_DIR, SCREEN_RECT
+from pysurvive.flashlight import Flashlight
+from pysurvive.utils import load_image, load_sound
 
 
 class Player(Animation):

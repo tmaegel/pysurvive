@@ -5,7 +5,7 @@ from typing import Optional
 
 import pygame as pg
 
-from .config import FPS
+from pysurvive.config import FPS
 
 
 class Animation(pg.sprite.Sprite):

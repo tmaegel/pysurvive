@@ -4,8 +4,8 @@ import json
 
 import pygame as pg
 
-from .config import COLORKEY
-from .utils import load_image
+from pysurvive.config import COLORKEY
+from pysurvive.utils import load_image
 
 
 class Spritesheet:
