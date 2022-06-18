@@ -59,14 +59,11 @@ class RotatableImage:
 
 class PlayerImages:
     def __init__(self) -> None:
-        self.images = []
+        self.images: list[list[RotatableImage]] = []
         self._load_images()
 
-    def __setitem__(self, index, data):
-        self.images[index] = data
-
-    def __getitem__(self, index):
-        return self.images[index]
+    def __getitem__(self, frame: int) -> list[RotatableImage]:
+        return self.images[frame]
 
     def _load_images(self) -> None:
         """Preloading images for each movement state."""
