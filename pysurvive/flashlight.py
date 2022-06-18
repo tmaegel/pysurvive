@@ -207,14 +207,14 @@ class Flashlight:
 
         # for ray in self.rays:
         #     ray.draw(screen,
-        #              self.player.get_virt_x(),
-        #              self.player.get_virt_y(),
+        #              self.player.virt_x,
+        #              self.player.virt_y,
         #              self.player.game.get_offset())
 
 
 class LightRay(Ray):
     def __init__(self, _x, _y, _angle):
-        Ray.__init__(self, _x, _y, _angle)
+        super().__init__(_x, _y, _angle)
 
     def update(self, _x, _y):
         # x, y start coordinates of the ray.

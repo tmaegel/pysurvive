@@ -5,13 +5,12 @@ from typing import Optional
 
 import pygame as pg
 
-from pysurvive.config import FPS
+from pysurvive.config import FPS, SCREEN_RECT
 
 
 class Animation(pg.sprite.Sprite):
     def __init__(self) -> None:
-        # Call Sprite initializer
-        pg.sprite.Sprite.__init__(self)
+        super().__init__()
         # Contains a list of images/frames.
         self.images = []
         # Current image of the animation sequence/images.
@@ -25,17 +24,30 @@ class Animation(pg.sprite.Sprite):
 class Screen(pg.sprite.Sprite):
 
     """
-    Simple screen class to detect wheather objects
-    are visible on the screen.
+    Simple sprite that represent the screen and is used to detect
+    wheather objects are visible on the screen.
     """
 
-    def __init__(self, _x, _y, _size) -> None:
-        pg.sprite.Sprite.__init__(self)
+    def __init__(self, rect: pg.Rect = None) -> None:
+        super().__init__()
+        if rect:
+            self.image = pg.Surface(rect.size)
+            self.rect = rect
+        else:
+            self.image = pg.Surface(SCREEN_RECT.size)
+            self.rect = SCREEN_RECT
 
-        self.image = pg.Surface(_size)
-        self.rect = self.image.get_rect()
-        self.rect.x = _x
-        self.rect.y = _y
+    @property
+    def size(self) -> tuple[int, int]:
+        return self.rect.size
+
+    @property
+    def width(self) -> int:
+        return self.rect.width
+
+    @property
+    def height(self) -> int:
+        return self.rect.height
 
 
 class LineSegment:
@@ -71,7 +83,7 @@ class Block(pg.sprite.Sprite):
         _offset,
         _sides=("top", "right", "bottom", "left"),
     ) -> None:
-        pg.sprite.Sprite.__init__(self)
+        super().__init__()
         self.x = _x
         self.y = _y
         self.width = _width

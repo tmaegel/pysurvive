@@ -6,12 +6,41 @@ import pygame as pg
 from pygame.locals import K_ESCAPE, KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP, QUIT
 
 from pysurvive.class_toolchain import Screen
-from pysurvive.config import BLUE, COLORKEY, FPS, GRAY_LIGHT2, RED_LIGHT, SCREEN_RECT
+from pysurvive.config import (
+    BLACK,
+    BLUE,
+    COLORKEY,
+    FLASHLIGHT_ENABLE,
+    FPS,
+    GRAY_LIGHT2,
+    RED_LIGHT,
+)
 from pysurvive.enemy import Enemy
 from pysurvive.logger import logger
 from pysurvive.navmesh import NavMesh
 from pysurvive.player import Player
+from pysurvive.player.feets import PlayerFeet
+from pysurvive.player.viewpoint import Viewpoint
 from pysurvive.room import Box, Room
+
+
+class PlayerGroup(pg.sprite.RenderPlain):
+
+    """Sprite group that contains all drawable player sprites."""
+
+    def __init__(self, game) -> None:
+        super().__init__()
+        self.game = game  # Reference to the game object.
+        self.viewpoint = Viewpoint()
+        self.player = Player(self, 200, 200)  # Absolute position in game world.
+        # self.feets = PlayerFeet(self)
+        self.add(
+            (
+                self.viewpoint,
+                # self.feets,
+                self.player,
+            )
+        )
 
 
 class Game:
@@ -21,10 +50,12 @@ class Game:
     def __init__(self) -> None:
         logger.info("Starting...")
         pg.init()
-
         self.clock = pg.time.Clock()
+        # Sprite that represent the screen.
+        # Used to determine whether elements are in the viewing area.
+        self.screen = Screen()
         # Set the height and width of the screen.
-        self.screen = pg.display.set_mode(SCREEN_RECT.size)
+        self.window_surface = pg.display.set_mode(self.screen.size)
         # Set the window title.
         pg.display.set_caption("pysurvive")
         # Turn off the mouse cursor.
@@ -35,7 +66,7 @@ class Game:
         self.fps_font = pg.font.SysFont("Arial", 14)
 
         # Prepare the shadow surface / screen.
-        self.screen_shadow = pg.Surface(self.screen.get_size())
+        self.screen_shadow = pg.Surface(self.screen.size)
         self.screen_shadow = self.screen_shadow.convert()
         self.screen_shadow.set_alpha(240)
         self.screen_shadow.set_colorkey(COLORKEY)
@@ -44,15 +75,12 @@ class Game:
         self.player_start_x = 200
         self.player_start_y = 200
         # Global game position. Offset for objects in the game world.
-        self.game_x = self.player_start_x - SCREEN_RECT.width // 2
-        self.game_y = self.player_start_y - SCREEN_RECT.height // 2
+        self.game_x = self.player_start_x - self.screen.width // 2
+        self.game_y = self.player_start_y - self.screen.height // 2
 
         #
         # Prepare game objects
         #
-
-        # Used to determine whether elements are in the viewing area.
-        self.screen_sprite = Screen(0, 0, SCREEN_RECT.size)
 
         # A sprite group that contains all room sprites..
         self.room_sprites = pg.sprite.RenderPlain(self.create_rooms())
@@ -66,9 +94,9 @@ class Game:
         # Initialize the navmesh based on the map.
         self.navmesh = NavMesh(self)
 
-        self.enemy_sprites = pg.sprite.RenderPlain(
-            Enemy(self, 100, 100),
-        )
+        # self.enemy_sprites = pg.sprite.RenderPlain(
+        #     Enemy(self, 100, 100),
+        # )
         # A sprite group that contains all close room sprites (render only).
         self.room_render_sprites = pg.sprite.RenderPlain()
         # A sprite group that contains all close block sprites (render only).
@@ -88,9 +116,7 @@ class Game:
                     self.unique_block_points.append(point)
 
         # Player
-        self.player = Player(self, self.player_start_x, self.player_start_y)
-        # A sprite group that contains all player sprites.
-        self.player_sprites = pg.sprite.RenderPlain((self.player.feets, self.player))
+        self.player_sprites = PlayerGroup(self)
 
     def start(self) -> None:
         """
@@ -114,9 +140,9 @@ class Game:
                     self.running = False
                 elif event.type == MOUSEBUTTONDOWN:
                     if event.button == 1:
-                        self.player.shot()
+                        self.player_sprites.player.shot()
                     elif event.button == 3:
-                        self.player.reload()
+                        self.player_sprites.player.reload()
                 elif event.type == MOUSEBUTTONUP:
                     pass
 
@@ -124,8 +150,8 @@ class Game:
             direction_x = keystate[pg.K_d] - keystate[pg.K_a]
             direction_y = keystate[pg.K_s] - keystate[pg.K_w]
 
-            # Fill the screen with the default background color.
-            self.screen.fill(GRAY_LIGHT2)
+            # Fill the window surface with the default background color.
+            self.window_surface.fill(GRAY_LIGHT2)
 
             #
             # Refactor the render sprites group
@@ -137,7 +163,7 @@ class Game:
             # Find the new sprites.
             self.block_render_sprites.add(
                 pg.sprite.spritecollide(
-                    self.screen_sprite,
+                    self.screen,
                     self.block_sprites,
                     False,
                     collided=pg.sprite.collide_rect,
@@ -145,7 +171,7 @@ class Game:
             )
             self.room_render_sprites.add(
                 pg.sprite.spritecollide(
-                    self.screen_sprite,
+                    self.screen,
                     self.room_sprites,
                     False,
                     collided=pg.sprite.collide_rect,
@@ -156,10 +182,10 @@ class Game:
             # Updating
             #
 
-            self.player_sprites.update(dt, [direction_x, direction_y])
+            self.player_sprites.update(dt, (direction_x, direction_y))
             # Update all objects here otherwise the mechanism for
             # detecting which objects are on the screen is overridden.
-            self.enemy_sprites.update(dt, self.get_offset())
+            # self.enemy_sprites.update(dt, self.get_offset())
             self.room_sprites.update(self.get_offset())
             self.block_sprites.update(self.get_offset())
 
@@ -167,55 +193,42 @@ class Game:
             # Drawing
             #
 
-            self.room_render_sprites.draw(self.screen)
+            self.room_render_sprites.draw(self.window_surface)
 
-            # Currently, all vertices within a virtual screen of
-            # 3x width and 3x height of the screen are used. Later
-            # when the visibility is limited, this can be further reduced.
-            # self.screen_shadow.fill(BLACK)
-            # self.player.light.draw(self.screen_shadow)
-            # self.screen.blit(self.screen_shadow, (0, 0))
+            # if FLASHLIGHT_ENABLE:
+            #     # Currently, all vertices within a virtual screen of
+            #     # 3x width and 3x height of the screen are used. Later
+            #     # when the visibility is limited, this can be further reduced.
+            #     self.screen_shadow.fill(BLACK)
+            #     self.player_sprites.light.draw(self.screen_shadow)
+            #     self.window_surface.blit(self.screen_shadow, (0, 0))
 
-            self.block_render_sprites.draw(self.screen)
-            if self.player.bullet:
-                self.player.bullet.draw(self.screen, self.get_offset())
-            self.player_sprites.draw(self.screen)
+            self.block_render_sprites.draw(self.window_surface)
+            # if self.player.sprites.bullet:
+            #     self.player.bullet.draw(self.window_surface, self.get_offset())
+            self.player_sprites.draw(self.window_surface)
             # @todo: Do not draw all enemies later.
-            self.enemy_sprites.draw(self.screen)
-
-            # Draw a cross as mouse cursor.
-            pg.draw.line(
-                self.screen,
-                BLUE,
-                (self.player.get_aim_x() - 5, self.player.get_aim_y() - 5),
-                (self.player.get_aim_x() + 5, self.player.get_aim_y() + 5),
-            )
-            pg.draw.line(
-                self.screen,
-                BLUE,
-                (self.player.get_aim_x() - 5, self.player.get_aim_y() + 5),
-                (self.player.get_aim_x() + 5, self.player.get_aim_y() - 5),
-            )
+            # self.enemy_sprites.draw(self.window_surface)
 
             # Debugging
             # Draw navmesh
             # for tri in self.navmesh.mesh:
             #     triangle = [(p[0] - self.game_x, p[1] - self.game_y)
             #                 for p in tri.triangle]
-            #     pg.draw.polygon(self.screen, (255, 0, 0), triangle, 1)
+            #     pg.draw.polygon(self.window_surface, (255, 0, 0), triangle, 1)
             #     for node in tri.nodes:
-            #         pg.draw.circle(self.screen, (0, 255, 0),
+            #         pg.draw.circle(self.window_surface, (0, 255, 0),
             #                        (node.position[0] - self.game_x,
             #                         node.position[1] - self.game_y), 2)
 
             # path = self.enemy_sprites.sprites()[0].path
             # if path:
             #     path = [(p[0] - self.game_x, p[1] - self.game_y) for p in path]
-            #     pg.draw.lines(self.screen, (0, 0, 255), False, path)
+            #     pg.draw.lines(self.window_surface, (0, 0, 255), False, path)
 
-            self.screen.blit(self.update_fps(), (5, 5))
+            self.window_surface.blit(self.update_fps(), (5, 5))
 
-            # Go ahead and update the screen with what we've drawn.
+            # Go ahead and update the window surface with what we've drawn.
             # This MUST happen after all the other drawing commands.
             pg.display.flip()
             # This limits the while loop to a max of FPS times per second.
@@ -329,7 +342,7 @@ class Game:
         return rooms
 
     def get_player_pos(self):
-        return (self.player.get_x(), self.player.get_y())
+        return (self.player.x, self.player.y)
 
     def set_offset(self, dx, dy):
         self.game_x = round(self.game_x - dx)
@@ -342,10 +355,10 @@ class Game:
         _block_points = []
         _offset = self.get_offset()
         _oversized_screen = pg.Rect(
-            _offset[0] - SCREEN_RECT.width,
-            _offset[1] - SCREEN_RECT.height,
-            SCREEN_RECT.width * 3,
-            SCREEN_RECT.height * 3,
+            _offset[0] - self.screen.width,
+            _offset[1] - self.screen.height,
+            self.screen.width * 3,
+            self.screen.height * 3,
         )
         for point in self.unique_block_points:
             if _oversized_screen.collidepoint(point):

@@ -21,6 +21,15 @@ class MovementState(Enum):
 
 
 @unique
+class FeetMovementState(Enum):
+    IDLE = 0
+    WALK = 1
+    WALK_LEFT = 2
+    WALK_RIGHT = 3
+    RUN = 4
+
+
+@unique
 class WeaponsState(Enum):
     KNIFE = 0
     HANDGUN = 1
@@ -58,8 +67,10 @@ class RotatableImage:
 
 
 class PlayerImages:
-    def __init__(self) -> None:
+    def __init__(self, custom_path: str, movement_states: Enum) -> None:
         self.images: list[list[RotatableImage]] = []
+        self.root_path = f"{IMAGE_DIR}/player/{custom_path}"
+        self.movement_states = movement_states
         self._load_images()
 
     def __getitem__(self, frame: int) -> list[RotatableImage]:
@@ -67,19 +78,15 @@ class PlayerImages:
 
     def _load_images(self) -> None:
         """Preloading images for each movement state."""
-        # @todo: Loading other weapon-movement images too.
-        for movement in MovementState:
+        for movement in self.movement_states:
             _images = []
-            directory = (
-                f"{IMAGE_DIR}/player/"
-                + f"{WeaponsState.HANDGUN.name.lower()}/{movement.name.lower()}/"
-            )
-            if os.path.isdir(directory):
-                path, _, files = next(os.walk(directory))
-                logger.info("Loading images from path %s.", path)
-                for img in sorted(files):
-                    if "spritesheet" not in img:
-                        _images.append(RotatableImage(f"{path}/{img}"))
-                self.images.append(_images)
-            else:
+            directory = f"{self.root_path}/{movement.name.lower()}/"
+            if not os.path.isdir(directory):
                 logger.warning("Directory %s doesnt exists.", directory)
+                continue
+            path, _, files = next(os.walk(directory))
+            logger.info("Loading images from path %s.", path)
+            for img in sorted(files):
+                if "spritesheet" not in img:  # Exclude spritesheet files.
+                    _images.append(RotatableImage(f"{path}/{img}"))
+            self.images.append(_images)

@@ -17,7 +17,7 @@ class Bullet(Ray):
     trail_offset = 25
 
     def __init__(self, _x, _y, _angle):
-        Ray.__init__(self, _x, _y, _angle)
+        super().__init__(_x, _y, _angle)
 
     def draw(self, screen, offset):
         """

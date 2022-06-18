@@ -32,7 +32,7 @@ class Enemy(Animation):
     ]
 
     def __init__(self, _game, _x, _y):
-        Animation.__init__(self)
+        super().__init__()
         # Reference to the game instance.
         self.game = _game
         self.x = _x

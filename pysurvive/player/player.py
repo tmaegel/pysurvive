@@ -5,9 +5,10 @@ import math
 import pygame as pg
 
 from pysurvive.class_toolchain import Animation
-from pysurvive.config import SCREEN_RECT
-from pysurvive.player import (
-    Bullet,
+from pysurvive.config import FLASHLIGHT_ENABLE, SCREEN_RECT
+from pysurvive.flashlight import Flashlight
+from pysurvive.player.bullet import Bullet
+from pysurvive.player.misc import (
     MovementState,
     PlayerImages,
     RotatableImage,
@@ -18,40 +19,42 @@ from pysurvive.utils import load_sound
 
 class Player(Animation):
 
-    feets = None
-    light = None
-    bullet = None
+    """Player object/sprite."""
 
-    movement_state = MovementState.IDLE
-    weapon_state = WeaponsState.HANDGUN
+    def __init__(self, _group, _x: int, _y: int) -> None:
+        super().__init__()
+        self.group = _group  # Reference to the group with other player object.
+        self.light = None  # Reference to the players flashlight.
+        self.bullet = None  # Reference to the players bullet(s).
+        self.x = _x  # Absolute x coordinate of player in the world.
+        self.y = _y  # Absolute x coordinate of player in the world.
 
-    def __init__(self, _game, _x: int, _y: int) -> None:
-        Animation.__init__(self)
-        # Reference to the game object
-        self.game = _game
-        # Real position of the player in the game world
-        self.x = _x
-        self.y = _y
         self.speed = 6
         self.direction = (0, 0)
-
-        # Preloading sounds
-        self.sound_shot = load_sound("shot/pistol.wav")
-        self.sound_reload = load_sound("reload/pistol.wav")
+        self.movement_state = MovementState.IDLE
+        self.weapon_state = WeaponsState.RIFLE
 
         # Contains the original (scaled only) images of the player object.
-        self.images = PlayerImages()
+        # @todo: Loading other weapon-movement images too.
+        self.images = PlayerImages(
+            custom_path=self.weapon_state.name.lower(), movement_states=MovementState
+        )
         self.image = self.active_image
-        self.mask = pg.mask.from_surface(self.image)
+        self.mask = pg.mask.from_surface(self.image)  # For collision detection.
+        # Acts as the virtual position (center of the screen) of the player.
         self.rect = self.image.get_rect()
         # Virtual position the image at the center of the screen
         # The position of image/rect used for drawing only
         self.rect.center = (SCREEN_RECT.width // 2, SCREEN_RECT.height // 2)
 
-        # self.feets = PlayerFeet(self)
-        # Initialize the light (flashlight) with x and y from player
-        # The initial coordinates are used for drawing only.
-        # self.light = Flashlight(self, self.get_x(), self.get_y())
+        # Preloading sounds
+        self.sound_shot = load_sound("shot/pistol.wav")
+        self.sound_reload = load_sound("reload/pistol.wav")
+
+        if FLASHLIGHT_ENABLE:
+            # Initialize the light (flashlight) with x and y from player
+            # The initial coordinates are used for drawing only.
+            self.light = Flashlight(self, self.x, self.y)
 
     @property
     def active_image_object(self) -> RotatableImage:
@@ -64,6 +67,11 @@ class Player(Animation):
         return self.active_image_object.image
 
     @property
+    def virt_pos(self) -> tuple[int, int]:
+        """Get the virtual rect position of the player on the screen."""
+        return self.rect.center
+
+    @property
     def virt_x(self) -> int:
         """Get the virtual x coordinate of the player on the screen."""
         return self.rect.centerx
@@ -74,22 +82,12 @@ class Player(Animation):
         return self.rect.centery
 
     @property
-    def viewpoint_x(self) -> int:
-        """Get the x coordinate of the mouse cursor."""
-        return pg.mouse.get_pos()[0]
-
-    @property
-    def viewpoint_y(self) -> int:
-        """Get the y coordinate of the mouse cursor."""
-        return pg.mouse.get_pos()[1]
-
-    @property
     def angle(self) -> float:
         """Get the angle of the player position on the screen."""
         return (
             math.atan2(
-                self.viewpoint_y - self.virt_y,
-                self.viewpoint_x - self.virt_x,
+                self.group.viewpoint.y - self.virt_y,
+                self.group.viewpoint.x - self.virt_x,
             )
             + 2 * math.pi
         ) % (2 * math.pi)
@@ -99,8 +97,8 @@ class Player(Animation):
         """Get the angle of the weapon position on the screen."""
         return (
             math.atan2(
-                self.viewpoint_y - self.virt_weapon_y,
-                self.viewpoint_x - self.virt_weapon_x,
+                self.group.viewpoint.y - self.virt_weapon_y,
+                self.group.viewpoint.x - self.virt_weapon_x,
             )
             + 2 * math.pi
         ) % (2 * math.pi)
@@ -190,19 +188,17 @@ class Player(Animation):
         # Allow moving only if there is no collision detected
         if not self.collide_by_move():
             self.move()
-
         # Rotate the iamge
         if not self.collide_by_rotation(self.weapon_angle):
             self.rotate(self.weapon_angle)
-
-        # Update flashlight of player
-        # self.light.update(self.get_x(), self.get_y())
+        if FLASHLIGHT_ENABLE:
+            # Update flashlight of player
+            self.light.update(self.x, self.y)
 
     def move(self) -> None:
         """Move the player in the specific direction."""
         dx, dy = self.move_vector
-        self.game.set_offset(dx, dy)
-
+        self.group.game.set_offset(dx, dy)
         # Add the negate value of dx and dy to the player position
         self.x = round(self.x - dx)
         self.y = round(self.y - dy)
@@ -219,7 +215,7 @@ class Player(Animation):
         self.mask = pg.mask.from_surface(self.image)
         # Keep the image on the same position.
         # Save its current center.
-        x, y = self.rect.center
+        x, y = self.virt_pos
         # Replace old rect with new rect.
         self.rect = self.image.get_rect()
         # Put the new rect's center at old center.
@@ -238,7 +234,6 @@ class Player(Animation):
             # If reloading
             elif self.movement_state == MovementState.RELOAD:
                 self.movement_state = MovementState.IDLE
-
         # If not attacking, shooting and reloading
         if self.movement_state in (MovementState.IDLE, MovementState.MOVE):
             if self.direction[0] != 0 or self.direction[1] != 0:
@@ -253,11 +248,10 @@ class Player(Animation):
         self.frame = 0
         self.movement_state = MovementState.SHOOT
         self.sound_shot.play()
-
         # Create bullet object
         self.bullet = Bullet(self.weapon_x, self.weapon_y, self.weapon_angle)
         self.bullet.intersect = self.bullet.get_intersection(
-            self.game.block_sprites.sprites()
+            self.group.game.block_sprites.sprites()
         )
 
     def reload(self) -> None:
@@ -273,7 +267,7 @@ class Player(Animation):
         """
 
         # Stop the movement for collision checks
-        self.game.set_offset(0, 0)
+        self.group.game.set_offset(0, 0)
 
         # Backup the position of player
         player_rect_x = self.virt_x
@@ -283,8 +277,8 @@ class Player(Animation):
         dx, dy = self.move_vector
 
         # Simulate the movement by move the rect object
-        self.rect.centerx = round(self.rect.centerx - dx)
-        self.rect.centery = round(self.rect.centery - dy)
+        self.rect.centerx = round(self.virt_x - dx)
+        self.rect.centery = round(self.virt_y - dy)
 
         collision = False
         for block in self._collide_by_rect():
@@ -334,7 +328,10 @@ class Player(Animation):
 
     def _collide_by_rect(self) -> list[pg.sprite.Sprite]:
         block_hit_list = pg.sprite.spritecollide(
-            self, self.game.block_render_sprites, False, collided=pg.sprite.collide_rect
+            self,
+            self.group.game.block_render_sprites,
+            False,
+            collided=pg.sprite.collide_rect,
         )
 
         return block_hit_list

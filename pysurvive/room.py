@@ -13,7 +13,7 @@ class Room(pg.sprite.Sprite):
     door_size = 100
 
     def __init__(self, _x, _y, _width, _height, _offset, _doors=()):
-        pg.sprite.Sprite.__init__(self)
+        super().__init__()
 
         # Real position of the room in the game world.
         self.x = _x
@@ -244,7 +244,7 @@ class Wall(Block):
     thickness = 2
 
     def __init__(self, _x, _y, _width, _height, _sides, _offset):
-        Block.__init__(self, _x, _y, _width, _height, _sides, _offset)
+        super().__init__(_x, _y, _width, _height, _sides, _offset)
 
         self.image.fill(GRAY_LIGHT2)
 
@@ -279,7 +279,7 @@ class Box(Block):
     thickness = 2
 
     def __init__(self, _x, _y, _size, _offset):
-        Block.__init__(self, _x, _y, _size, _size, _offset)
+        super().__init__(_x, _y, _size, _size, _offset)
 
         self.image.fill(GRAY_LIGHT2)
 
