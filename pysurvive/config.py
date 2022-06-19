@@ -9,7 +9,7 @@ FLASHLIGHT_ENABLE = False
 ASSETS_DIR = "assets"
 IMAGE_DIR = ASSETS_DIR + "/img"
 SOUND_DIR = ASSETS_DIR + "/sound"
-SCREEN_RECT = pg.Rect(0, 0, 1024, 768)
+SCREEN_RECT = pg.Rect(0, 0, 1600, 1000)
 
 FPS = 30  # Frame per seconds
 

@@ -1,6 +1,6 @@
 import pygame as pg
 
-from pysurvive.config import BLACK, BLUE, COLORKEY
+from pysurvive.config import BLUE, COLORKEY
 
 
 class Viewpoint(pg.sprite.Sprite):

@@ -7,7 +7,6 @@ import pygame as pg
 from pysurvive.class_toolchain import Animation
 from pysurvive.config import FLASHLIGHT_ENABLE, SCREEN_RECT
 from pysurvive.flashlight import Flashlight
-from pysurvive.player.bullet import Bullet
 from pysurvive.player.misc import (
     MovementState,
     PlayerImages,
@@ -25,14 +24,13 @@ class Player(Animation):
         super().__init__()
         self.group = _group  # Reference to the group with other player object.
         self.light = None  # Reference to the players flashlight.
-        self.bullet = None  # Reference to the players bullet(s).
         self.x = _x  # Absolute x coordinate of player in the world.
         self.y = _y  # Absolute x coordinate of player in the world.
 
         self.speed = 6
         self.direction = (0, 0)
         self.movement_state = MovementState.IDLE
-        self.weapon_state = WeaponsState.RIFLE
+        self.weapon_state = WeaponsState.HANDGUN
 
         # Contains the original (scaled only) images of the player object.
         # @todo: Loading other weapon-movement images too.
@@ -230,7 +228,6 @@ class Player(Animation):
             # If shooting
             elif self.movement_state == MovementState.SHOOT:
                 self.movement_state = MovementState.IDLE
-                # del self.bullet
             # If reloading
             elif self.movement_state == MovementState.RELOAD:
                 self.movement_state = MovementState.IDLE
@@ -248,11 +245,11 @@ class Player(Animation):
         self.frame = 0
         self.movement_state = MovementState.SHOOT
         self.sound_shot.play()
-        # Create bullet object
-        self.bullet = Bullet(self.weapon_x, self.weapon_y, self.weapon_angle)
-        self.bullet.intersect = self.bullet.get_intersection(
-            self.group.game.block_sprites.sprites()
-        )
+        self.group.create_bullet()
+        # self.bullet = Bullet(self.weapon_x, self.weapon_y, self.weapon_angle)
+        # self.bullet.intersect = self.bullet.get_intersection(
+        #     self.group.game.block_sprites.sprites()
+        # )
 
     def reload(self) -> None:
         # Set reload movement

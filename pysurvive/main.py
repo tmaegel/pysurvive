@@ -6,19 +6,12 @@ import pygame as pg
 from pygame.locals import K_ESCAPE, KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP, QUIT
 
 from pysurvive.class_toolchain import Screen
-from pysurvive.config import (
-    BLACK,
-    BLUE,
-    COLORKEY,
-    FLASHLIGHT_ENABLE,
-    FPS,
-    GRAY_LIGHT2,
-    RED_LIGHT,
-)
+from pysurvive.config import COLORKEY, FLASHLIGHT_ENABLE, FPS, GRAY_LIGHT2, RED_LIGHT
 from pysurvive.enemy import Enemy
 from pysurvive.logger import logger
 from pysurvive.navmesh import NavMesh
 from pysurvive.player import Player
+from pysurvive.player.bullet import Bullet
 from pysurvive.player.feets import PlayerFeet
 from pysurvive.player.viewpoint import Viewpoint
 from pysurvive.room import Box, Room
@@ -34,6 +27,9 @@ class PlayerGroup(pg.sprite.RenderPlain):
         self.viewpoint = Viewpoint()
         self.player = Player(self, 200, 200)  # Absolute position in game world.
         # self.feets = PlayerFeet(self)
+        self.bullet = Bullet(
+            self.player.weapon_x, self.player.weapon_y, self.player.weapon_angle
+        )
         self.add(
             (
                 self.viewpoint,
@@ -41,6 +37,14 @@ class PlayerGroup(pg.sprite.RenderPlain):
                 self.player,
             )
         )
+
+    def create_bullet(self) -> None:
+        """Create bullet object."""
+        bullet = Bullet(
+            self.player.weapon_x, self.player.weapon_y, self.player.weapon_angle
+        )
+        # bullet.intersect = bullet.get_intersection(self.game.block_sprites.sprites())
+        self.add((bullet,))
 
 
 class Game:
@@ -58,6 +62,7 @@ class Game:
         self.window_surface = pg.display.set_mode(self.screen.size)
         # Set the window title.
         pg.display.set_caption("pysurvive")
+        pg.transform.set_smoothscale_backend("SSE")
         # Turn off the mouse cursor.
         pg.mouse.set_visible(0)
         # Limit the number of allowed pygame events.
@@ -120,13 +125,10 @@ class Game:
 
     def start(self) -> None:
         """
-        This function is called when the program starts.
-
-        It initializes everything it needs, then runs in
-        a loop until the function returns.
+        This function is called when the program starts. It initializes
+        everything it needs, then runs in a loop until the function returns.
         """
 
-        # Main loop
         while self.running:
 
             # The number of milliseconds that passed between the
@@ -204,8 +206,6 @@ class Game:
             #     self.window_surface.blit(self.screen_shadow, (0, 0))
 
             self.block_render_sprites.draw(self.window_surface)
-            # if self.player.sprites.bullet:
-            #     self.player.bullet.draw(self.window_surface, self.get_offset())
             self.player_sprites.draw(self.window_surface)
             # @todo: Do not draw all enemies later.
             # self.enemy_sprites.draw(self.window_surface)
