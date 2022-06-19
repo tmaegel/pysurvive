@@ -5,7 +5,7 @@ import math
 import pygame as pg
 
 from pysurvive.class_toolchain import Animation
-from pysurvive.config import FLASHLIGHT_ENABLE, SCREEN_RECT
+from pysurvive.config import FLASHLIGHT_ENABLE, SCREEN_RECT, SOUND_DIR
 from pysurvive.flashlight import Flashlight
 from pysurvive.player.misc import (
     MovementState,
@@ -46,8 +46,8 @@ class Player(Animation):
         self.rect.center = (SCREEN_RECT.width // 2, SCREEN_RECT.height // 2)
 
         # Preloading sounds
-        self.sound_shot = load_sound("shot/pistol.wav")
-        self.sound_reload = load_sound("reload/pistol.wav")
+        self.sound_shot = load_sound(f"{SOUND_DIR}/shot/pistol.wav")
+        self.sound_reload = load_sound(f"{SOUND_DIR}/reload/pistol.wav")
 
         if FLASHLIGHT_ENABLE:
             # Initialize the light (flashlight) with x and y from player

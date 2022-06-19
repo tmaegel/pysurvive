@@ -46,7 +46,7 @@ class RotatableImage:
     def _load_image(self, filename: str) -> pg.Surface:
         """Load image from filesystem."""
         logger.debug("Loading image from file %s.", filename)
-        image, _ = load_image(filename, alpha=True, path=False)
+        image, _ = load_image(filename, alpha=True)
         return image
 
     def _scale_image(self, scale: int = 3) -> pg.Surface:

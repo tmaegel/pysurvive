@@ -11,7 +11,7 @@ from pysurvive.utils import load_image
 class Spritesheet:
     def __init__(self, filename: str) -> None:
         self.filename = filename
-        self.sprite_sheet, _ = load_image(filename, alpha=True, path=False)
+        self.sprite_sheet, _ = load_image(filename, alpha=True)
         self.meta_data = self.filename.replace("png", "json")
         with open(self.meta_data) as f:
             self.data = json.load(f)

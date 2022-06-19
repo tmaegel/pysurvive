@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 # coding=utf-8
-import os
 import sys
-from typing import Tuple, Union
+from typing import Union
 
 import pygame as pg
 from pygame.locals import RLEACCEL
 
-from pysurvive.config import IMAGE_DIR, SOUND_DIR
 from pysurvive.logger import logger
 
 
@@ -17,23 +15,29 @@ class NoneSound:
 
 
 def load_image(
-    name: str,
-    alpha: bool = False,
-    colorkey: Tuple[int, int, int] = None,
-    path: bool = True,
-) -> Tuple[pg.Surface, pg.Rect]:
-    if path:
-        # Create a full pathname to the file.
-        fullname = os.path.join(IMAGE_DIR, name)
-    else:
-        fullname = name
+    filename: str, alpha: bool = False, colorkey: tuple[int, int, int] = None
+) -> tuple[pg.Surface, pg.Rect]:
+    """
+    Load an image from disk.
+
+    Args:
+        filename (str): The filename including the path to load the image.
+        alpha (bool): For alpha transparency, like in .png images, use the
+            convert_alpha() method after loading so that the image has per
+            pixel transparency. Default to False.
+        colorkey (tuple[int, int, int]): Is only used if alpha is set to False.
+            The color with the value is not displayed. Default to None.
+
+    Returns:
+        Image, Rect (tuple[Surface, Rect]): The image and the rect that represents it.
+    """
     try:
-        image = pg.image.load(fullname)
+        image = pg.image.load(filename)
     except pg.error as message:
-        logger.error("Erro while loading image %s: %s", fullname, message)
+        logger.error("Error while loading image %s: %s", filename, message)
         sys.exit(1)
-    # Makes a new copy of a Surface and converts its
-    # color format and depth to match the display.
+    # Makes a new copy of a Surface and converts its color format and
+    # depth to match the display.
     if alpha:
         image = image.convert_alpha()
     else:
@@ -46,19 +50,22 @@ def load_image(
     return image, image.get_rect()
 
 
-def load_sound(name: str, path: bool = True) -> Union[pg.mixer.Sound, NoneSound]:
+def load_sound(filename: str) -> Union[pg.mixer.Sound, NoneSound]:
+    """
+    Load a sound from disk.
+
+    Args:
+        filename (str): The filename including the path to load the sound.
+
+    Returns:
+        Sound object (Sound): The sound object.
+    """
     if not pg.mixer:
         return NoneSound()
-
-    if path:
-        # Create a full pathname to the file.
-        fullname = os.path.join(SOUND_DIR, name)
-    else:
-        fullname = name
     try:
-        sound = pg.mixer.Sound(fullname)
+        sound = pg.mixer.Sound(filename)
     except pg.error as message:
-        logger.error("Erro while loading image %s: %s", fullname, message)
+        logger.error("Error while loading image %s:%s", filename, message)
         sys.exit(1)
 
     return sound

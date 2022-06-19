@@ -2,16 +2,18 @@
 # coding=utf-8
 import pygame as pg
 
+# Logging
 DEBUG_LOG = False
 
-FLASHLIGHT_ENABLE = False
-
+# Directories
 ASSETS_DIR = "assets"
 IMAGE_DIR = ASSETS_DIR + "/img"
 SOUND_DIR = ASSETS_DIR + "/sound"
-SCREEN_RECT = pg.Rect(0, 0, 1600, 1000)
 
+# Game settings
 FPS = 30  # Frame per seconds
+SCREEN_RECT = pg.Rect(0, 0, 1600, 1000)
+FLASHLIGHT_ENABLE = False
 
 # Define the colors we will use in RGB format.
 COLORKEY = (255, 0, 255)
