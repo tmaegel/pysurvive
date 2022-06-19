@@ -40,17 +40,19 @@ class WeaponsState(Enum):
 class RotatableImage:
     def __init__(self, filename: str) -> None:
         self.filename = filename
-        self._load_image(self.filename)
-        self._scale_image()
+        self.image = self._load_image(self.filename)
+        self.image = self._scale_image()
 
-    def _load_image(self, filename: str) -> None:
+    def _load_image(self, filename: str) -> pg.Surface:
         """Load image from filesystem."""
         logger.debug("Loading image from file %s.", filename)
-        self.image, _ = load_image(filename, alpha=True, path=False)
+        image, _ = load_image(filename, alpha=True, path=False)
+        return image
 
-    def _scale_image(self, scale: int = 4) -> None:
+    def _scale_image(self, scale: int = 3) -> pg.Surface:
         """Scaling image down."""
-        self.image = pg.transform.scale(
+        # pg.transform.scale
+        return pg.transform.smoothscale(
             self.image,
             (
                 self.image.get_rect().width // scale,
