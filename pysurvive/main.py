@@ -6,15 +6,20 @@ import pygame as pg
 from pygame.locals import K_ESCAPE, KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP, QUIT
 
 from pysurvive.class_toolchain import Screen
-from pysurvive.config import COLORKEY, FLASHLIGHT_ENABLE, FPS, GRAY_LIGHT2, RED_LIGHT
-from pysurvive.enemy import Enemy
+from pysurvive.config import (
+    COLORKEY,
+    FLASHLIGHT_ENABLE,
+    FPS,
+    GRAY_LIGHT2,
+    IMAGE_DIR,
+    MAP_DIR,
+    RED_LIGHT,
+)
 from pysurvive.logger import logger
-from pysurvive.navmesh import NavMesh
+from pysurvive.map.level import Level
 from pysurvive.player import Player
 from pysurvive.player.bullet import Bullet
-from pysurvive.player.feets import PlayerFeet
 from pysurvive.player.viewpoint import Viewpoint
-from pysurvive.room import Box, Room
 
 
 class PlayerGroup(pg.sprite.RenderPlain):
@@ -71,15 +76,15 @@ class Game:
         self.fps_font = pg.font.SysFont("Arial", 14)
 
         # Prepare the shadow surface / screen.
-        self.screen_shadow = pg.Surface(self.screen.size)
-        self.screen_shadow = self.screen_shadow.convert()
-        self.screen_shadow.set_alpha(240)
-        self.screen_shadow.set_colorkey(COLORKEY)
+        # self.screen_shadow = pg.Surface(self.screen.size)
+        # self.screen_shadow = self.screen_shadow.convert()
+        # self.screen_shadow.set_alpha(240)
+        # self.screen_shadow.set_colorkey(COLORKEY)
 
-        # Absolute position of the game world.
-        self.player_start_x = 200
-        self.player_start_y = 200
-        # Global game position. Offset for objects in the game world.
+        # Absolute (start) position of the player in game world.
+        self.player_start_x = 500
+        self.player_start_y = 500
+        # Relative position of game objects to the player.
         self.game_x = self.player_start_x - self.screen.width // 2
         self.game_y = self.player_start_y - self.screen.height // 2
 
@@ -88,38 +93,40 @@ class Game:
         #
 
         # A sprite group that contains all room sprites..
-        self.room_sprites = pg.sprite.RenderPlain(self.create_rooms())
+        # self.room_sprites = pg.sprite.RenderPlain(self.create_rooms())
 
         # A sprite group that contains all wall and block sprites.
-        self.block_sprites = pg.sprite.RenderPlain(
-            ((wall for wall in room.walls) for room in self.room_sprites.sprites()),
-            # Box(350, 325, 75, self.get_offset())
-        )
+        # self.block_sprites = pg.sprite.RenderPlain(
+        #     ((wall for wall in room.walls) for room in self.room_sprites.sprites()),
+        #     # Box(350, 325, 75, self.get_offset())
+        # )
 
         # Initialize the navmesh based on the map.
-        self.navmesh = NavMesh(self)
+        # self.navmesh = NavMesh(self)
 
         # self.enemy_sprites = pg.sprite.RenderPlain(
         #     Enemy(self, 100, 100),
         # )
         # A sprite group that contains all close room sprites (render only).
-        self.room_render_sprites = pg.sprite.RenderPlain()
+        # self.room_render_sprites = pg.sprite.RenderPlain()
         # A sprite group that contains all close block sprites (render only).
-        self.block_render_sprites = pg.sprite.RenderPlain()
+        # self.block_render_sprites = pg.sprite.RenderPlain()
         # A sprite group that contains all close enemy sprites (render only).
-        self.enemy_render_sprites = pg.sprite.RenderPlain()
+        # self.enemy_render_sprites = pg.sprite.RenderPlain()
         # A sprite group that contains all close sprites (collision only).
-        self.collide_sprites = pg.sprite.RenderPlain()
+        # self.collide_sprites = pg.sprite.RenderPlain()
 
         # Get all unique points (corners) of block segments.
         # Prevent duplication of x, y coordinates.
-        self.unique_block_points = []
-        for block in self.block_sprites.sprites():
-            for block_point in block.get_points():
-                point = (block_point[0], block_point[1])
-                if point not in self.unique_block_points:
-                    self.unique_block_points.append(point)
+        # self.unique_block_points = []
+        # for block in self.block_sprites.sprites():
+        #     for block_point in block.get_points():
+        #         point = (block_point[0], block_point[1])
+        #         if point not in self.unique_block_points:
+        #             self.unique_block_points.append(point)
 
+        # Map
+        self.map_sprites = pg.sprite.RenderPlain((Level(self, f"{MAP_DIR}/level.map"),))
         # Player
         self.player_sprites = PlayerGroup(self)
 
@@ -160,42 +167,45 @@ class Game:
             #
 
             # Remove all sprites of the previous loop.
-            self.block_render_sprites.empty()
-            self.room_render_sprites.empty()
+            # self.block_render_sprites.empty()
+            # self.room_render_sprites.empty()
             # Find the new sprites.
-            self.block_render_sprites.add(
-                pg.sprite.spritecollide(
-                    self.screen,
-                    self.block_sprites,
-                    False,
-                    collided=pg.sprite.collide_rect,
-                )
-            )
-            self.room_render_sprites.add(
-                pg.sprite.spritecollide(
-                    self.screen,
-                    self.room_sprites,
-                    False,
-                    collided=pg.sprite.collide_rect,
-                )
-            )
+            # self.block_render_sprites.add(
+            #     pg.sprite.spritecollide(
+            #         self.screen,
+            #         self.block_sprites,
+            #         False,
+            #         collided=pg.sprite.collide_rect,
+            #     )
+            # )
+            # self.room_render_sprites.add(
+            #     pg.sprite.spritecollide(
+            #         self.screen,
+            #         self.room_sprites,
+            #         False,
+            #         collided=pg.sprite.collide_rect,
+            #     )
+            # )
 
             #
             # Updating
             #
 
+            self.map_sprites.update()
             self.player_sprites.update(dt, (direction_x, direction_y))
             # Update all objects here otherwise the mechanism for
             # detecting which objects are on the screen is overridden.
             # self.enemy_sprites.update(dt, self.get_offset())
-            self.room_sprites.update(self.get_offset())
-            self.block_sprites.update(self.get_offset())
+            # self.room_sprites.update(self.get_offset())
+            # self.block_sprites.update(self.get_offset())
 
             #
             # Drawing
             #
 
-            self.room_render_sprites.draw(self.window_surface)
+            self.map_sprites.draw(self.window_surface)
+
+            # self.room_render_sprites.draw(self.window_surface)
 
             # if FLASHLIGHT_ENABLE:
             #     # Currently, all vertices within a virtual screen of
@@ -205,7 +215,7 @@ class Game:
             #     self.player_sprites.light.draw(self.screen_shadow)
             #     self.window_surface.blit(self.screen_shadow, (0, 0))
 
-            self.block_render_sprites.draw(self.window_surface)
+            # self.block_render_sprites.draw(self.window_surface)
             self.player_sprites.draw(self.window_surface)
             # @todo: Do not draw all enemies later.
             # self.enemy_sprites.draw(self.window_surface)
@@ -233,6 +243,15 @@ class Game:
             pg.display.flip()
             # This limits the while loop to a max of FPS times per second.
             self.clock.tick(FPS)
+
+    @property
+    def offset(self) -> tuple[int, int]:
+        return (self.game_x, self.game_y)
+
+    @offset.setter
+    def offset(self, delta: tuple[int, int]) -> None:
+        self.game_x = round(self.game_x - delta[0])
+        self.game_y = round(self.game_y - delta[1])
 
     def create_rooms(self, numbers=2):
         rooms = []
@@ -343,13 +362,6 @@ class Game:
 
     def get_player_pos(self):
         return (self.player.x, self.player.y)
-
-    def set_offset(self, dx, dy):
-        self.game_x = round(self.game_x - dx)
-        self.game_y = round(self.game_y - dy)
-
-    def get_offset(self):
-        return (self.game_x, self.game_y)
 
     def get_block_points_on_screen(self):
         _block_points = []

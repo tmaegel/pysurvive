@@ -187,8 +187,8 @@ class Player(Animation):
         if not self.collide_by_move():
             self.move()
         # Rotate the iamge
-        if not self.collide_by_rotation(self.weapon_angle):
-            self.rotate(self.weapon_angle)
+        # if not self.collide_by_rotation(self.weapon_angle):
+        self.rotate(self.weapon_angle)
         if FLASHLIGHT_ENABLE:
             # Update flashlight of player
             self.light.update(self.x, self.y)
@@ -196,7 +196,7 @@ class Player(Animation):
     def move(self) -> None:
         """Move the player in the specific direction."""
         dx, dy = self.move_vector
-        self.group.game.set_offset(dx, dy)
+        self.group.game.offset = (dx, dy)
         # Add the negate value of dx and dy to the player position
         self.x = round(self.x - dx)
         self.y = round(self.y - dy)
@@ -245,7 +245,7 @@ class Player(Animation):
         self.frame = 0
         self.movement_state = MovementState.SHOOT
         self.sound_shot.play()
-        self.group.create_bullet()
+        # self.group.create_bullet()
         # self.bullet = Bullet(self.weapon_x, self.weapon_y, self.weapon_angle)
         # self.bullet.intersect = self.bullet.get_intersection(
         #     self.group.game.block_sprites.sprites()
@@ -264,7 +264,7 @@ class Player(Animation):
         """
 
         # Stop the movement for collision checks
-        self.group.game.set_offset(0, 0)
+        self.group.game.offset = (0, 0)
 
         # Backup the position of player
         player_rect_x = self.virt_x
@@ -278,12 +278,12 @@ class Player(Animation):
         self.rect.centery = round(self.virt_y - dy)
 
         collision = False
-        for block in self._collide_by_rect():
-            # Make better check here and handle the collision.
-            point = pg.sprite.collide_mask(self, block)
-            if point is not None:
-                collision = True
-                break
+        # for block in self._collide_by_rect():
+        #     # Make better check here and handle the collision.
+        #     point = pg.sprite.collide_mask(self, block)
+        #     if point is not None:
+        #         collision = True
+        #         break
 
         # Reset the simulated changes of player
         self.rect.centerx = player_rect_x

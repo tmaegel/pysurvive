@@ -25,8 +25,7 @@ class Bullet(pg.sprite.Sprite):
         self.image.fill(RED)
         self.image.set_colorkey(COLORKEY)
         self.rect = pg.Rect(self.x, self.y, self.size, self.size)
-        print(self.x, self.y)
-        # self._draw_image()
+        # self._render()
         # Draw the impact position if true. Otherwise draw the trail of the bullet.
         # self.impact = False
 
@@ -34,7 +33,7 @@ class Bullet(pg.sprite.Sprite):
         """Update the bullet position."""
         pass
 
-    def _draw_image(self) -> None:
+    def _render(self) -> None:
         pass
 
     # def draw(self, screen, offset):

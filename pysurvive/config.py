@@ -7,13 +7,15 @@ DEBUG_LOG = False
 
 # Directories
 ASSETS_DIR = "assets"
+MAP_DIR = "maps"
 IMAGE_DIR = ASSETS_DIR + "/img"
 SOUND_DIR = ASSETS_DIR + "/sound"
 
 # Game settings
 FPS = 30  # Frame per seconds
-SCREEN_RECT = pg.Rect(0, 0, 1600, 1000)
+SCREEN_RECT = pg.Rect(0, 0, 1200, 800)
 FLASHLIGHT_ENABLE = False
+TILE_SIZE = 64  # Tilesize (width, height )in pixel.
 
 # Define the colors we will use in RGB format.
 COLORKEY = (255, 0, 255)
