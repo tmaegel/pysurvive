@@ -14,7 +14,7 @@ class TestTileset:
     )
     def test_load__tile_with_colorkey_is_none(self, setup_pygame, tileset, expected):
         """Tiles with the color of the colorkey shoudl be None."""
-        tileset = Tileset("test", ".", tileset)
+        tileset = Tileset("test", tileset)
         print(expected)
         print(tileset.table)
         for y, row in enumerate(expected):

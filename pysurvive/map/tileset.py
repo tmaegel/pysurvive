@@ -38,9 +38,8 @@ class Tileset:
 
     """Represents and load a tileset from filesystem."""
 
-    def __init__(self, _name: str, _sign: str, _filename: str) -> None:
+    def __init__(self, _name: str, _filename: str) -> None:
         self.name = _name
-        self.sign = _sign
         self.filename = _filename
         self.enter = False  # Player can not enter this tile.
         self.block = False  # This tile block e.g. bullets.
