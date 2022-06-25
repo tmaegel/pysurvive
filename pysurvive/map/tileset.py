@@ -4,7 +4,7 @@ from enum import Enum, unique
 
 import pygame as pg
 
-from pysurvive.config import TILE_SIZE
+from pysurvive.config import COLORKEY, TILE_SIZE
 from pysurvive.logger import logger
 from pysurvive.utils import load_image
 
@@ -61,6 +61,10 @@ class Tileset:
             for tile_y in range(0, image_height // tile_size):
                 rect = (tile_x * tile_size, tile_y * tile_size, tile_size, tile_size)
                 # Subsurface doesn’t create copies in memory.
-                line.append(image.subsurface(rect))
+                tile_image = image.subsurface(rect)
+                if tile_image.get_at((0, 0)) == COLORKEY:
+                    line.append(None)
+                else:
+                    line.append(tile_image)
 
         return tile_table
