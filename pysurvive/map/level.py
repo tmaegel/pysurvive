@@ -45,6 +45,7 @@ block = false
 
 import configparser
 import re
+from os.path import exists as file_exists
 from typing import Optional
 
 import pygame as pg
@@ -72,8 +73,8 @@ class Level(pg.sprite.Sprite):
         # Contains infos about the tileset used in the map file
         # and the tileset itself. Loaded from map file.
         self.tilesets = {}
-        self.width = 500  # Map width (default). Overwrite by _load_map().
-        self.height = 500  # Map height (default). Overwrite by _load_map().
+        self.width = 1  # Map width (default). Overwrite by _load_map().
+        self.height = 1  # Map height (default). Overwrite by _load_map().
         self._load(self.map_file)
         # Map size (width x height) based on the loaded map file.
         self.image = pg.Surface((self.width * TILE_SIZE, self.height * TILE_SIZE))
@@ -96,8 +97,11 @@ class Level(pg.sprite.Sprite):
     def _render(self) -> None:
         """Render initial the map on its own surface to blit it later at once."""
         for layer_index, layer_desc in self.map_layer_raw.items():
-            # @todo: Check for layer_index in list.
-            used_tileset = self.tilesets[layer_index].table
+            try:
+                used_tileset = self.tilesets[layer_index].table
+            except KeyError:
+                logger.warning("Missing tileset fo layer %s.", layer_index)
+                continue
             for y, row in enumerate(layer_desc):
                 for x, tile in enumerate(row):
                     # Only render if the tile is set in layer description.
@@ -112,17 +116,22 @@ class Level(pg.sprite.Sprite):
     def _load(self, map_file: str) -> None:
         """Load map from filesystem."""
         logger.info("Loading map from file %s.", map_file)
+        if not file_exists(map_file):
+            logger.error("Map file %s does not exists.", map_file)
+            return
+
+        last_layer = None
         map_config = configparser.ConfigParser()
-        # @todo: Exception for: Filename not exists.
         map_config.read(map_file)
 
         # Read the layer of the map file.
         for layer_name, layer_desc in map_config["level"].items():
-            regex_result = re.search("^layer_(?P<layer_index>\d)$", layer_name)
+            regex_result = re.search("^layer_(?P<layer_index>[0-9]+)$", layer_name)
             if not regex_result:
                 continue
             layer_index = regex_result.groupdict()["layer_index"]
             if layer_index:
+                last_layer = layer_index
                 self.map_layer_raw[int(layer_index)] = layer_desc.split("\n")
 
         # Read and load the tileset defined in the map file.
@@ -135,9 +144,10 @@ class Level(pg.sprite.Sprite):
             # @todo: Map config validity check: integer, ...
             self.tilesets[int(desc["layer"])] = tileset
 
-        # Get map size based in the first (0) layer.
-        self.width = len(self.map_layer_raw[0][0])
-        self.height = len(self.map_layer_raw[0])
+        if last_layer:
+            # Get map size based in the last layer.
+            self.width = len(self.map_layer_raw[int(layer_index)][0])
+            self.height = len(self.map_layer_raw[int(layer_index)])
 
     def update(self) -> None:
         """Update the map object."""
