@@ -44,6 +44,7 @@ block = false
 """
 
 import configparser
+import random
 import re
 from os.path import exists as file_exists
 from typing import Optional
@@ -52,6 +53,7 @@ import pygame as pg
 
 from pysurvive.config import TILE_SIZE, WHITE
 from pysurvive.logger import logger
+from pysurvive.map.objects import MapObject
 from pysurvive.map.tileset import TileIndex, Tileset
 
 
@@ -66,13 +68,13 @@ class Level(pg.sprite.Sprite):
         self.tile_flag = "0"
         self.x = 0
         self.y = 0
+
         self.map_file = _map_file  # Filename (including path) of the map file.
-        self.map_layer_raw = (
-            {}
-        )  # Map layer with contains each raw tile (from map file).
+        self.map_layer_raw = {}  # Contains the raw map layer (from map file).
         # Contains infos about the tileset used in the map file
         # and the tileset itself. Loaded from map file.
         self.tilesets = {}
+
         self.width = 1  # Map width (default). Overwrite by _load_map().
         self.height = 1  # Map height (default). Overwrite by _load_map().
         self._load(self.map_file)
@@ -82,6 +84,28 @@ class Level(pg.sprite.Sprite):
         self.rect = pg.Rect(
             self.x, self.y, self.width * TILE_SIZE, self.height * TILE_SIZE
         )
+
+        # Generate random map objects.
+        self.number_of_objects = 50
+        self.map_objects = pg.sprite.RenderPlain()
+        for _ in range(self.number_of_objects):
+            # @todo: tileset index
+            r = random.randint(0, len(self.tilesets[0].detail_images) - 1)
+            collision_index = 0
+            while True:
+                if collision_index >= 25:
+                    break
+                x = random.randint(0, self.rect.width)
+                y = random.randint(0, self.rect.height)
+                # @todo: tileset index
+                map_object = MapObject(x, y, self.tilesets[0].detail_images[r])
+                if not pg.sprite.spritecollideany(map_object, self.map_objects):
+                    self.map_objects.add((map_object,))
+                    break
+                else:
+                    collision_index += 1
+
+        print(len(self.map_objects.sprites()))
 
         self._render()
 
@@ -96,6 +120,7 @@ class Level(pg.sprite.Sprite):
 
     def _render(self) -> None:
         """Render initial the map on its own surface to blit it later at once."""
+        # Render each layer of the tile map.
         for layer_index, layer_desc in self.map_layer_raw.items():
             try:
                 used_tileset = self.tilesets[layer_index].table
@@ -112,6 +137,10 @@ class Level(pg.sprite.Sprite):
                             used_tileset[tile_x][tile_y],
                             (x * TILE_SIZE, y * TILE_SIZE),
                         )
+
+        # Blit the map objects on the map.
+        for map_obj in self.map_objects.sprites():
+            self.image.blit(map_obj.image, (map_obj.x, map_obj.y))
 
     def _load(self, map_file: str) -> None:
         """Load map from filesystem."""
@@ -137,10 +166,10 @@ class Level(pg.sprite.Sprite):
         # Read and load the tileset defined in the map file.
         for section in map_config.sections():
             desc = dict(map_config.items(section))
-            if "tileset" not in desc or "layer" not in desc:
+            if "layer" not in desc:
                 continue
             # @todo: set block and enter flag, if available!
-            tileset = Tileset(section, desc["tileset"])
+            tileset = Tileset(section)
             # @todo: Map config validity check: integer, ...
             self.tilesets[int(desc["layer"])] = tileset
 
@@ -148,9 +177,12 @@ class Level(pg.sprite.Sprite):
             # Get map size based in the last layer.
             self.width = len(self.map_layer_raw[int(layer_index)][0])
             self.height = len(self.map_layer_raw[int(layer_index)])
+            logger.info("Resulting map size is %s x %s.", self.width, self.height)
 
     def update(self) -> None:
         """Update the map object."""
+        # @todo: Exctract only visible image (screen rect) from image
+        # instead of moving the whole big map image.
         self.rect.x = round(self.x - self.game.offset[0])
         self.rect.y = round(self.y - self.game.offset[1])
 

@@ -31,6 +31,7 @@ def load_image(
     Returns:
         Image, Rect (tuple[Surface, Rect]): The image and the rect that represents it.
     """
+    logger.debug("Loading image from file %s.", filename)
     try:
         image = pg.image.load(filename)
     except pg.error as message:

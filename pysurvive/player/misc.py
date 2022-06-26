@@ -45,7 +45,6 @@ class RotatableImage:
 
     def _load_image(self, filename: str) -> pg.Surface:
         """Load image from filesystem."""
-        logger.debug("Loading image from file %s.", filename)
         image, _ = load_image(filename, alpha=True)
         return image
 
@@ -82,7 +81,7 @@ class PlayerImages:
         """Preloading images for each movement state."""
         for movement in self.movement_states:
             _images = []
-            directory = f"{self.root_path}/{movement.name.lower()}/"
+            directory = f"{self.root_path}/{movement.name.lower()}"
             if not os.path.isdir(directory):
                 logger.warning("Directory %s doesnt exists.", directory)
                 continue

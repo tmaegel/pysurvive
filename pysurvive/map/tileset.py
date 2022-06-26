@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # coding=utf-8
+import os
 from enum import Enum, unique
 
 import pygame as pg
 
-from pysurvive.config import COLORKEY, TILE_SIZE
+from pysurvive.config import COLORKEY, IMAGE_DIR, TILE_SIZE
 from pysurvive.logger import logger
 from pysurvive.utils import load_image
 
@@ -38,12 +39,16 @@ class Tileset:
 
     """Represents and load a tileset from filesystem."""
 
-    def __init__(self, _name: str, _filename: str) -> None:
+    def __init__(self, _name: str) -> None:
         self.name = _name
-        self.filename = _filename
+        self.root_path = f"{IMAGE_DIR}/tiles/{self.name}"
+        self.filename = f"{self.root_path}/tilelist.png"
         self.enter = False  # Player can not enter this tile.
         self.block = False  # This tile block e.g. bullets.
-        self.table = self._load(self.filename)  # Single tiles in a 2d-table.
+        # Single tiles in a 2d-table.
+        self.table = self._load(self.filename)
+        # Contains the images of the details for the tileset.
+        self.detail_images = self._load_details(f"{self.root_path}/details")
 
     def __str__(self) -> str:
         return f"{self.name}={self.filename}"
@@ -67,3 +72,25 @@ class Tileset:
                     line.append(tile_image)
 
         return tile_table
+
+    def _load_details(
+        self, details_path: str, detail_types: tuple = ("cracks", "objects")
+    ) -> list[pg.Surface]:
+        """Load the details images of the tileset."""
+        object_images = []
+        # Looking for details in directories "cracks" and "objects" and
+        # for different image sizes.
+        for detail in detail_types:
+            for size in ("16", "32", "64", "128", "256", "512", "1024"):
+                directory = f"{details_path}/{detail}/{size}"
+                if not os.path.isdir(directory):
+                    logger.warning("Directory %s doesnt exists.", directory)
+                    continue
+
+                logger.info("Loading images from path %s.", directory)
+                path, _, files = next(os.walk(directory))
+                for img in sorted(files):
+                    image, _ = load_image(f"{path}/{img}", alpha=True)
+                    object_images.append(image)
+
+        return object_images
