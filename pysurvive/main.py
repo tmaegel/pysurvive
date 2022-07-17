@@ -126,7 +126,7 @@ class Game:
         #             self.unique_block_points.append(point)
 
         # Map
-        self.map_sprites = pg.sprite.RenderPlain((Level(self, f"{MAP_DIR}/level.map"),))
+        self.map_sprites = pg.sprite.RenderPlain((Level(self, f"{MAP_DIR}/map.json"),))
         # Player
         self.player_sprites = PlayerGroup(self)
 
