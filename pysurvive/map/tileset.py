@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
+import sys
+
 import pygame as pg
 import pytiled_parser as pytiled
 
@@ -59,20 +61,15 @@ class WallMapping(TilesetMapping):
         1: (0, 0),  # top left
         2: (1, 0),  # top
         3: (2, 0),  # top right
-        6: (0, 1),  # left
-        # (1, 1) is unset!
-        8: (2, 1),  # right
-        11: (0, 2),  # bottom right
-        12: (1, 2),  # bottom
-        13: (2, 2),  # bottom left
-        9: (3, 1),  # inner top left
-        10: (4, 1),  # inner top right
-        4: (3, 0),  # inner bottom left
-        5: (4, 0),  # inner bottom right
-        19: (3, 3),  # outer top left
-        20: (4, 3),  # outer top right
-        14: (3, 2),  # outer bottom left
-        15: (4, 2),  # outer bottom right
+        4: (3, 0),  # left
+        5: (4, 0),  # right
+        6: (5, 0),  # bottom left
+        7: (6, 0),  # bottom
+        8: (7, 0),  # bottom right
+        9: (8, 0),  # inner top left
+        10: (9, 0),  # inner top right
+        11: (10, 0),  # inner bottom left
+        12: (11, 0),  # inner bottom right
     }
 
 
@@ -83,6 +80,19 @@ class FloorMapping(TilesetMapping):
     default = 1
     mapping = {
         1: (0, 0),
+    }
+
+
+class DoorMapping(TilesetMapping):
+
+    """Door tileset consist of 4 single tiles."""
+
+    default = 1
+    mapping = {
+        1: (0, 0),  # top
+        2: (1, 0),  # bottom
+        3: (2, 0),  # left
+        4: (3, 0),  # right
     }
 
 
@@ -100,7 +110,7 @@ class Tileset:
     def __repr__(self) -> str:
         return (
             f"Tileset (name={self.name},"
-            f" filename={self.filename},"
+            f" image={self.image_path},"
             f" ids=[{self.first_gid} .. {self.last_gid}]"
         )
 
@@ -148,9 +158,11 @@ class Tileset:
             return WallMapping.get_tile(_tile_id)
         elif self.model == "floor":
             return FloorMapping.get_tile(_tile_id)
+        elif self.model == "door":
+            return DoorMapping.get_tile(_tile_id)
         else:
             logger.error("Invalid tileset type.")
-            return None
+            sys.exit(1)
 
     def _load(self, filename: str) -> list[list[pg.Rect]]:
         """Load a tileset from filename and split it into a table."""

@@ -70,14 +70,24 @@ class Level(pg.sprite.Sprite):
                     tileset = self.get_tileset(tile_id)
                     if not tileset:
                         continue
+
                     tile_x, tile_y = tileset.get_tile(tile_id)
-                    self.image.blit(
-                        tileset.table[tile_x][tile_y],
-                        (
-                            x * self.map_config.tile_size.width,
-                            y * self.map_config.tile_size.height,
-                        ),
-                    )
+                    try:
+                        self.image.blit(
+                            tileset.table[tile_x][tile_y],
+                            (
+                                x * self.map_config.tile_size.width,
+                                y * self.map_config.tile_size.height,
+                            ),
+                        )
+                    except IndexError:
+                        logger.error(
+                            "Error while accessing tile (%s, %s) oftileset %r.",
+                            tile_x,
+                            tile_y,
+                            tileset,
+                        )
+                        sys.exit(1)
 
     def update(self) -> None:
         """Update the map object."""
