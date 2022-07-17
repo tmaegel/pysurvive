@@ -65,6 +65,10 @@ class Level(pg.sprite.Sprite):
         """Render initial the map on its own surface to blit it later at once."""
         # Render each layer of the tile map.
         for layer in self.map_config.layers:
+            # Exlude non TileLayer layers.
+            if not isinstance(layer, pytiled.layer.TileLayer):
+                continue
+
             for y, row in enumerate(layer.data):
                 for x, tile_id in enumerate(row):
                     tileset = self.get_tileset(tile_id)
@@ -88,6 +92,8 @@ class Level(pg.sprite.Sprite):
                             tileset,
                         )
                         sys.exit(1)
+
+        # @todo: Blit the ObjectLayer after the TileLayer.
 
     def update(self) -> None:
         """Update the map object."""
