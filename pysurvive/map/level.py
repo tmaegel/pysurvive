@@ -75,10 +75,10 @@ class Level(pg.sprite.Sprite):
                     if not tileset:
                         continue
 
-                    tile_x, tile_y = tileset.get_tile(tile_id)
+                    tile_index = tileset.get_tile_index(tile_id)
                     try:
                         self.image.blit(
-                            tileset.table[tile_x][tile_y],
+                            tileset.get_tile(tile_id),
                             (
                                 x * self.map_config.tile_size.width,
                                 y * self.map_config.tile_size.height,
@@ -86,14 +86,35 @@ class Level(pg.sprite.Sprite):
                         )
                     except IndexError:
                         logger.error(
-                            "Error while accessing tile (%s, %s) oftileset %r.",
-                            tile_x,
-                            tile_y,
+                            "Error while accessing tile (%s) of tileset %r.",
+                            tile_index,
                             tileset,
                         )
                         sys.exit(1)
 
-        # @todo: Blit the ObjectLayer after the TileLayer.
+        for layer in self.map_config.layers:
+            # Exlude non ObjectLayer layers.
+            if not isinstance(layer, pytiled.layer.ObjectLayer):
+                continue
+
+            for tile_obj in layer.tiled_objects:
+                tileset = self.get_tileset(tile_obj.gid)
+                if not tileset:
+                    continue
+
+                tile_index = tileset.get_tile_index(tile_obj.gid)
+                try:
+                    self.image.blit(
+                        tileset.get_tile(tile_obj.gid),
+                        (tile_obj.coordinates.x, tile_obj.coordinates.y),
+                    )
+                except IndexError:
+                    logger.error(
+                        "Error while accessing tile (%s) of tileset %r.",
+                        tile_index,
+                        tileset,
+                    )
+                    sys.exit(1)
 
     def update(self) -> None:
         """Update the map object."""
