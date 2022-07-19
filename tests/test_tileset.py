@@ -2,26 +2,20 @@
 # coding=utf-8
 import pytest
 
+from pysurvive.config import COLORKEY
 from pysurvive.map.tileset import Tileset
 
 
 class TestTileset:
     @pytest.mark.parametrize(
-        "tileset, expected",
+        "tileset",
         [
-            ("tests/testdata/test_tileset_2x1.png", [[1, 0]]),
-            ("tests/testdata/test_tileset_2x2.png", [[0, 1], [1, 1]]),
-            ("tests/testdata/test_tileset_2x3.png", [[1, 1], [1, 0], [1, 1]]),
+            ("tests/testdata/tileset/tilelist.png"),
         ],
     )
-    def test_load__tile_with_colorkey_is_none(self, setup_pygame, tileset, expected):
-        """Tiles with the color of the colorkey shoudl be None."""
-        tileset = Tileset("test", tileset)
-        print(expected)
-        print(tileset.table)
-        for y, row in enumerate(expected):
-            for x, entry in enumerate(row):
-                if entry == 0:
-                    assert tileset.table[x][y] is None
-                elif entry == 1:
-                    assert tileset.table[x][y] is not None
+    def test_load__valid_tileset(self, setup_pygame, tileset):
+        """Test if the tileset is detected and cut correctly."""
+        tile_table = Tileset._load(tileset, 64, 64)
+        print(tile_table)
+        for tile in tile_table:
+            assert tile.get_at((0, 0)) == COLORKEY

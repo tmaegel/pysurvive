@@ -5,7 +5,7 @@ from typing import Union
 import pygame as pg
 import pytiled_parser as pytiled
 
-from pysurvive.config import COLORKEY, ROOT_PATH
+from pysurvive.config import ROOT_PATH
 from pysurvive.logger import logger
 from pysurvive.utils import load_image
 
@@ -16,12 +16,7 @@ class Tileset:
 
     def __init__(self, _config: pytiled.tileset.Tileset) -> None:
         self.config = _config
-        # Check if the tileset is stored in a single file
-        # or consists of mulitple files.
-        _tileset_path = self.tileset_path
-        self.table = self._load(_tileset_path)
-        # Contains the images of the details for the tileset.
-        # self.detail_images = self._load_details(f"{self.root_path}/details")
+        self.table = self._load(self.tileset_path, self.tile_width, self.tile_height)
 
     def __str__(self) -> str:
         return (
@@ -74,25 +69,25 @@ class Tileset:
         """Returns the tile (image) by id."""
         return self.table[tile_id - self.first_gid]
 
-    def _load(self, filename: str) -> list[list[pg.Surface]]:
-        """Load a tileset from single filename and split it into a table."""
-        logger.info("Loading tileset from file %s.", filename)
-        image, _ = load_image(filename, alpha=True)
+    @staticmethod
+    def _load(tileset_file: str, tile_width: int, tile_height: int) -> list[pg.Surface]:
+        """
+        Load a tileset from single file and split it into a table.
+        The tileset consists of several tiles arranged in a row.
+        """
+        logger.info("Loading tileset from file %s.", tileset_file)
+        image, _ = load_image(tileset_file, alpha=True)
         image_width, image_height = image.get_size()
         tile_table: list[pg.Surface] = []
-        for tile_x in range(0, image_width // self.tile_width):
-            for tile_y in range(0, image_height // self.tile_height):
-                rect = (
-                    tile_x * self.tile_width,
-                    tile_y * self.tile_height,
-                    self.tile_width,
-                    self.tile_height,
-                )
-                # Subsurface doesn’t create copies in memory.
-                tile_image = image.subsurface(rect)
-                if tile_image.get_at((0, 0)) == COLORKEY:
-                    tile_table.append(None)
-                else:
-                    tile_table.append(tile_image)
+        for tile_x in range(0, image_width // tile_width):
+            rect = (
+                tile_x * tile_width,
+                0,
+                tile_width,
+                tile_height,
+            )
+            # Subsurface doesn’t create copies in memory.
+            tile_image = image.subsurface(rect)
+            tile_table.append(tile_image)
 
         return tile_table
