@@ -8,16 +8,11 @@ from pygame.locals import SRCALPHA
 
 from pysurvive.utils import load_image
 
-COLORKEY = (255, 0, 255)
 
-
-def load_tile_from_filelist(
-    files_path: list[str], tile_size: int
-) -> list[list[pg.Surface]]:
+def load_tile_from_filelist(files_path: str, tile_size: int) -> list[pg.Surface]:
     tile_table = []
-
     if not os.path.isdir(files_path):
-        print("Directory %s doesnt exists." % files_path)
+        print(f"Directory {files_path} doesnt exists.")
         sys.exit(1)
 
     path, _, files = next(os.walk(files_path))
@@ -37,7 +32,7 @@ def load_tile_from_filelist(
     return tile_table
 
 
-def main():
+def main() -> None:
     """
     Script expect 2 positional arguments:
         * 1. The path of the list of tiles (files).
