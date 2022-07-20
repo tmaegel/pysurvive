@@ -52,7 +52,7 @@ init-hook = "import sys; sys.path.append('pysurvive')"
 
 [tool.pylint.FORMAT]
 max-line-length = 88
-disable = ["R0902", "R0903", "R0913", "R0913","C0103", "C0114", "C0115", "C0116", "C0411"]
+disable = ["R0902", "R0903", "R0904", "R0911", "R0913","C0103", "C0114", "C0115", "C0116", "C0411"]
 
 [tool.isort]
 skip_glob = "venv/*"
