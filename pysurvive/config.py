@@ -5,7 +5,7 @@ from pathlib import Path
 import pygame as pg
 
 # Logging
-DEBUG_LOG = True
+DEBUG_LOG = False
 
 # Directories
 ROOT_PATH = Path(__file__).parent

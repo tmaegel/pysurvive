@@ -2,7 +2,9 @@
 # coding=utf-8
 import triangle as tr
 
-from pysurvive.logger import logger
+from pysurvive.logger import Logger
+
+logger = Logger()
 
 
 class NavMesh:

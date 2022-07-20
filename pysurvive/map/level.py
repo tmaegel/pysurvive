@@ -8,8 +8,10 @@ import pygame as pg
 import pytiled_parser as pytiled
 
 from pysurvive.config import WHITE
-from pysurvive.logger import logger
+from pysurvive.logger import Logger
 from pysurvive.map.tileset import Tileset
+
+logger = Logger()
 
 
 class Level(pg.sprite.Sprite):

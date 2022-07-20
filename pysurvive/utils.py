@@ -6,7 +6,9 @@ from typing import Union
 import pygame as pg
 from pygame.locals import RLEACCEL
 
-from pysurvive.logger import logger
+from pysurvive.logger import Logger
+
+logger = Logger()
 
 
 class NoneSound:

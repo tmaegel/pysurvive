@@ -7,8 +7,10 @@ import pygame as pg
 
 from pysurvive.class_toolchain import Animation
 from pysurvive.config import IMAGE_DIR
-from pysurvive.logger import logger
+from pysurvive.logger import Logger
 from pysurvive.utils import load_image
+
+logger = Logger()
 
 
 class Enemy(Animation):

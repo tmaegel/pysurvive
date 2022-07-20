@@ -7,8 +7,10 @@ from enum import Enum, unique
 import pygame as pg
 
 from pysurvive.config import IMAGE_DIR
-from pysurvive.logger import logger
+from pysurvive.logger import Logger
 from pysurvive.utils import load_image
+
+logger = Logger()
 
 
 @unique

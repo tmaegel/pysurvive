@@ -6,8 +6,10 @@ import pygame as pg
 import pytiled_parser as pytiled
 
 from pysurvive.config import ROOT_PATH
-from pysurvive.logger import logger
+from pysurvive.logger import Logger
 from pysurvive.utils import load_image
+
+logger = Logger()
 
 
 class Tileset:

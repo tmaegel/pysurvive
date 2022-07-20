@@ -15,11 +15,13 @@ from pysurvive.config import (
     MAP_DIR,
     RED_LIGHT,
 )
-from pysurvive.logger import logger
+from pysurvive.logger import Logger
 from pysurvive.map.level import Level
 from pysurvive.player import Player
 from pysurvive.player.bullet import Bullet
 from pysurvive.player.viewpoint import Viewpoint
+
+logger = Logger()
 
 
 class PlayerGroup(pg.sprite.RenderPlain):
