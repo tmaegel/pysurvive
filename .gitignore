@@ -109,3 +109,4 @@ ENV/
 assets/
 data/
 TODO
+.project.vim
