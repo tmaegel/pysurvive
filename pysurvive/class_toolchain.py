@@ -28,6 +28,14 @@ class Screen(pg.sprite.Sprite):
     wheather objects are visible on the screen.
     """
 
+    _screen = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._screen is None:
+            cls._screen = super().__new__(cls, *args, **kwargs)
+
+        return cls._screen
+
     def __init__(self, rect: pg.Rect = None) -> None:
         super().__init__()
         if rect:
