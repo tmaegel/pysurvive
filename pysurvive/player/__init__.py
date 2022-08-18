@@ -1,1 +1,1 @@
-from pysurvive.player.player import Player
+from pysurvive.player.player import Player, PlayerGroup

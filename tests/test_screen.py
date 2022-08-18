@@ -1,29 +1,65 @@
 #!/usr/bin/env python
 # coding=utf-8
 import pygame as pg
+import pytest
 
-from pysurvive.class_toolchain import Screen
 from pysurvive.config import SCREEN_RECT
+from pysurvive.game.core import Screen
 
 
 class TestScreen:
-    def test_screen__singleton(self):
-        """Test the screen singleton."""
-        screen_1 = Screen()
-        screen_2 = Screen()
+    @pytest.fixture()
+    def singleton(self):
+        def _wrapper(rect: pg.Rect = None):
+            return Screen(rect)
+
+        return _wrapper
+
+    @pytest.fixture()
+    def delete(self, singleton):
+        def _wrapper() -> None:
+            singleton().delete()
+
+        return _wrapper
+
+    def test_screen__singleton_without_args(self, singleton, delete):
+        """Test the screen singleton without arguments."""
+        screen_1 = singleton()
+        screen_2 = singleton()
         assert id(screen_1) == id(screen_2)
+        assert screen_1.width == SCREEN_RECT.width
+        assert screen_1.height == SCREEN_RECT.height
+        assert screen_1.size == SCREEN_RECT.size
+        assert screen_2.width == SCREEN_RECT.width
+        assert screen_2.height == SCREEN_RECT.height
+        assert screen_2.size == SCREEN_RECT.size
+        delete()
 
-    def test_screen__without_args(self):
-        """Test the screen class without args."""
-        screen = Screen()
-        assert screen.width == SCREEN_RECT.width
-        assert screen.height == SCREEN_RECT.height
-        assert screen.size == SCREEN_RECT.size
+    def test_screen__singleton_with_args_1(self, singleton, delete):
+        """Test the screen singleton with args."""
+        rect_1 = pg.Rect(0, 0, 10, 10)
+        screen_1 = singleton(rect_1)
+        screen_2 = singleton()
+        assert id(screen_1) == id(screen_2)
+        assert screen_1.width == rect_1.width
+        assert screen_1.height == rect_1.height
+        assert screen_1.size == rect_1.size
+        assert screen_2.width == rect_1.width
+        assert screen_2.height == rect_1.height
+        assert screen_2.size == rect_1.size
+        delete()
 
-    def test_screen__with_args(self):
-        """Test the screen class with args."""
-        rect = pg.Rect(0, 0, 10, 10)
-        screen = Screen(rect)
-        assert screen.width == rect.width
-        assert screen.height == rect.height
-        assert screen.size == rect.size
+    def test_screen__singleton_with_args_2(self, singleton, delete):
+        """Test the screen singleton with args."""
+        rect_1 = pg.Rect(0, 0, 10, 10)
+        rect_2 = pg.Rect(0, 0, 60, 60)
+        screen_1 = singleton(rect_1)
+        screen_2 = singleton(rect_2)
+        assert id(screen_1) == id(screen_2)
+        assert screen_1.width == rect_1.width
+        assert screen_1.height == rect_1.height
+        assert screen_1.size == rect_1.size
+        assert screen_2.width == rect_1.width
+        assert screen_2.height == rect_1.height
+        assert screen_2.size == rect_1.size
+        delete()

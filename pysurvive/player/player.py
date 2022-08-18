@@ -5,28 +5,61 @@ import math
 import pygame as pg
 
 from pysurvive.class_toolchain import Animation
-from pysurvive.config import FLASHLIGHT_ENABLE, SCREEN_RECT, SOUND_DIR
+from pysurvive.config import FLASHLIGHT_ENABLE, SOUND_DIR
 from pysurvive.flashlight import Flashlight
+from pysurvive.game.core import Camera, Screen
+from pysurvive.player.bullet import Bullet
 from pysurvive.player.misc import (
     MovementState,
     PlayerImages,
     RotatableImage,
     WeaponsState,
 )
+from pysurvive.player.viewpoint import Viewpoint
 from pysurvive.utils import load_sound
+
+
+class PlayerGroup(pg.sprite.RenderPlain):
+
+    """Sprite group that contains all drawable player sprites."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.viewpoint = Viewpoint()
+        self.player = Player(self)  # Absolute position in game world.
+        # self.feets = PlayerFeet(self)
+        self.bullet = Bullet(
+            self.player.weapon_x, self.player.weapon_y, self.player.weapon_angle
+        )
+        self.add(
+            (
+                self.viewpoint,
+                # self.feets,
+                self.player,
+            )
+        )
+
+    def create_bullet(self) -> None:
+        """Create bullet object."""
+        bullet = Bullet(
+            self.player.weapon_x, self.player.weapon_y, self.player.weapon_angle
+        )
+        # bullet.intersect = bullet.get_intersection(self.game.block_sprites.sprites())
+        self.add((bullet,))
 
 
 class Player(Animation):
 
     """Player object/sprite."""
 
-    def __init__(self, _group, _x: int, _y: int) -> None:
+    def __init__(self, _group) -> None:
         super().__init__()
         self.group = _group  # Reference to the group with other player object.
+        self.screen = Screen()
+        self.camera = Camera()
         self.light = None  # Reference to the players flashlight.
-        self.x = _x  # Absolute x coordinate of player in the world.
-        self.y = _y  # Absolute x coordinate of player in the world.
-
+        self.x = self.camera.centerx  # Absolute x coordinate of player in the world.
+        self.y = self.camera.centery  # Absolute x coordinate of player in the world.
         self.speed = 6
         self.direction = (0, 0)
         self.movement_state = MovementState.IDLE
@@ -43,7 +76,7 @@ class Player(Animation):
         self.rect = self.image.get_rect()
         # Virtual position the image at the center of the screen
         # The position of image/rect used for drawing only
-        self.rect.center = (SCREEN_RECT.width // 2, SCREEN_RECT.height // 2)
+        self.rect.center = (self.screen.centerx, self.screen.centery)
 
         # Preloading sounds
         self.sound_shot = load_sound(f"{SOUND_DIR}/shot/pistol.wav")
@@ -196,7 +229,7 @@ class Player(Animation):
     def move(self) -> None:
         """Move the player in the specific direction."""
         dx, dy = self.move_vector
-        self.group.game.offset = (dx, dy)
+        self.camera.position = (dx, dy)
         # Add the negate value of dx and dy to the player position
         self.x = round(self.x - dx)
         self.y = round(self.y - dy)
@@ -264,7 +297,7 @@ class Player(Animation):
         """
 
         # Stop the movement for collision checks
-        self.group.game.offset = (0, 0)
+        self.camera.position = (0, 0)
 
         # Backup the position of player
         player_rect_x = self.virt_x

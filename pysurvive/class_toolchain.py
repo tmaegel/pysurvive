@@ -21,43 +21,6 @@ class Animation(pg.sprite.Sprite):
         self._period = 1000.0 / FPS
 
 
-class Screen(pg.sprite.Sprite):
-
-    """
-    Simple sprite that represent the screen and is used to detect
-    wheather objects are visible on the screen.
-    """
-
-    _screen = None
-
-    def __new__(cls, *args, **kwargs):
-        if cls._screen is None:
-            cls._screen = super().__new__(cls, *args, **kwargs)
-
-        return cls._screen
-
-    def __init__(self, rect: pg.Rect = None) -> None:
-        super().__init__()
-        if rect:
-            self.image = pg.Surface(rect.size)
-            self.rect = rect
-        else:
-            self.image = pg.Surface(SCREEN_RECT.size)
-            self.rect = SCREEN_RECT
-
-    @property
-    def size(self) -> tuple[int, int]:
-        return self.rect.size
-
-    @property
-    def width(self) -> int:
-        return self.rect.width
-
-    @property
-    def height(self) -> int:
-        return self.rect.height
-
-
 class LineSegment:
 
     """
