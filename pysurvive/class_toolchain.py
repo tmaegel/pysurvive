@@ -5,7 +5,7 @@ from typing import Optional
 
 import pygame as pg
 
-from pysurvive.config import FPS, SCREEN_RECT
+from pysurvive.config import FPS
 
 
 class Animation(pg.sprite.Sprite):
@@ -18,7 +18,7 @@ class Animation(pg.sprite.Sprite):
         # Next time it has to be updated in ms.
         self._next_update = 0
         # Frequency/period of the animation in ms.
-        self._period = 1000.0 / FPS
+        self._period = 1500.0 / FPS
 
 
 class LineSegment:

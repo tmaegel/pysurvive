@@ -28,7 +28,10 @@ class Viewpoint(pg.sprite.Sprite):
         return pg.mouse.get_pos()[1]
 
     def _render(self) -> None:
-        """Render initial a cross as mouse cursor on its own surface to blit it later at once."""
+        """
+        Render initial a cross as mouse cursor on
+        its own surface to blit it later at once.
+        """
         pg.draw.line(
             self.image,
             self.color,
@@ -46,3 +49,6 @@ class Viewpoint(pg.sprite.Sprite):
         """Update the player viewpoint cursor positon."""
         self.rect.centerx = self.x
         self.rect.centery = self.y
+
+    def draw_border(self, surface: pg.Surface, sprite: pg.sprite.Sprite):
+        pass

@@ -5,6 +5,7 @@ from pathlib import Path
 import pygame as pg
 
 # Logging
+DEBUG_SPRITE = True
 DEBUG_LOG = False
 
 # Directories

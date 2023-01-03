@@ -5,13 +5,12 @@ import math
 import pygame as pg
 
 from pysurvive.class_toolchain import Animation
-from pysurvive.config import FLASHLIGHT_ENABLE, SOUND_DIR
+from pysurvive.config import DEBUG_SPRITE, FLASHLIGHT_ENABLE, RED, SOUND_DIR
 from pysurvive.flashlight import Flashlight
 from pysurvive.game.core import Camera, Screen
-from pysurvive.player.bullet import Bullet
 from pysurvive.player.misc import (
     MovementState,
-    PlayerImages,
+    PlayerSpritesheet,
     RotatableImage,
     WeaponsState,
 )
@@ -27,25 +26,34 @@ class PlayerGroup(pg.sprite.RenderPlain):
         super().__init__()
         self.viewpoint = Viewpoint()
         self.player = Player(self)  # Absolute position in game world.
-        # self.feets = PlayerFeet(self)
-        self.bullet = Bullet(
-            self.player.weapon_x, self.player.weapon_y, self.player.weapon_angle
-        )
         self.add(
             (
                 self.viewpoint,
-                # self.feets,
                 self.player,
             )
         )
 
-    def create_bullet(self) -> None:
-        """Create bullet object."""
-        bullet = Bullet(
-            self.player.weapon_x, self.player.weapon_y, self.player.weapon_angle
-        )
-        # bullet.intersect = bullet.get_intersection(self.game.block_sprites.sprites())
-        self.add((bullet,))
+    def draw(self, surface: pg.Surface) -> list[pg.Rect]:
+        """
+        Overwrite orginal draw method of RenderPlain.
+        """
+        sprites = self.sprites()
+        if hasattr(surface, "blits"):
+            self.spritedict.update(
+                zip(sprites, surface.blits((spr.image, spr.rect) for spr in sprites))
+            )
+        else:
+            for spr in sprites:
+                self.spritedict[spr] = surface.blit(spr.image, spr.rect)
+
+        if DEBUG_SPRITE:
+            for spr in sprites:
+                spr.draw_border(surface, spr)
+
+        self.lostsprites = []
+        dirty = self.lostsprites
+
+        return dirty
 
 
 class Player(Animation):
@@ -62,13 +70,15 @@ class Player(Animation):
         self.y = self.camera.centery  # Absolute x coordinate of player in the world.
         self.speed = 6
         self.direction = (0, 0)
+        self.player_type = "default"
         self.movement_state = MovementState.IDLE
+        self.old_movement_state = self.movement_state
         self.weapon_state = WeaponsState.HANDGUN
 
         # Contains the original (scaled only) images of the player object.
         # @todo: Loading other weapon-movement images too.
-        self.images = PlayerImages(
-            custom_path=self.weapon_state.name.lower(), movement_states=MovementState
+        self.images = PlayerSpritesheet(
+            custom_path=f"{self.player_type}/{self.weapon_state.name.lower()}"
         )
         self.image = self.active_image
         self.mask = pg.mask.from_surface(self.image)  # For collision detection.
@@ -195,6 +205,9 @@ class Player(Animation):
             -1 * self.direction[1] * self.speed,
         )
 
+    def draw_border(self, surface: pg.Surface, sprite: pg.sprite.Sprite):
+        pg.draw.rect(surface, RED, sprite.rect, width=1)
+
     def update(self, dt: int, direction: tuple[int, int]) -> None:
         """Update the player object."""
         # Update player values
@@ -253,42 +266,21 @@ class Player(Animation):
         self.rect.center = (x, y)
 
     def animate(self) -> None:
-        if self.frame == len(self.images[self.movement_state.value]) - 1:
-            # Rest movement after attacking, shooting or reloading.
-            # If attacking
-            if self.movement_state == MovementState.MELEEATTACK:
-                self.movement_state = MovementState.IDLE
-            # If shooting
-            elif self.movement_state == MovementState.SHOOT:
-                self.movement_state = MovementState.IDLE
-            # If reloading
-            elif self.movement_state == MovementState.RELOAD:
-                self.movement_state = MovementState.IDLE
-        # If not attacking, shooting and reloading
+        # If not attacking.
         if self.movement_state in (MovementState.IDLE, MovementState.MOVE):
             if self.direction[0] != 0 or self.direction[1] != 0:
                 # Move state
-                self.movement_state = MovementState.MOVE
+                self._switch_movement(MovementState.MOVE)
             elif self.direction[0] == 0 and self.direction[1] == 0:
                 # Idle state
-                self.movement_state = MovementState.IDLE
+                self._switch_movement(MovementState.IDLE)
 
-    def shot(self) -> None:
-        # Set shot movement
-        self.frame = 0
-        self.movement_state = MovementState.SHOOT
-        self.sound_shot.play()
-        # self.group.create_bullet()
-        # self.bullet = Bullet(self.weapon_x, self.weapon_y, self.weapon_angle)
-        # self.bullet.intersect = self.bullet.get_intersection(
-        #     self.group.game.block_sprites.sprites()
-        # )
-
-    def reload(self) -> None:
-        # Set reload movement
-        self.frame = 0
-        self.movement_state = MovementState.RELOAD
-        self.sound_reload.play()
+    def _switch_movement(self, movement_state: MovementState) -> None:
+        self.old_movement_state = self.movement_state  # Save old state
+        self.movement_state = movement_state
+        # Reset frame if movement_state differ.
+        if self.old_movement_state != self.movement_state:
+            self.frame = 0
 
     def collide_by_move(self) -> bool:
         """
