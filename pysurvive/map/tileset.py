@@ -67,12 +67,14 @@ class Tileset:
         """Returns the tile index of the table by id."""
         return tile_id - self.first_gid
 
-    def get_tile(self, tile_id: int) -> pg.Surface:
+    def get_tile(self, tile_id: int) -> pg.surface.Surface:
         """Returns the tile (image) by id."""
         return self.table[tile_id - self.first_gid]
 
     @staticmethod
-    def _load(tileset_file: str, tile_width: int, tile_height: int) -> list[pg.Surface]:
+    def _load(
+        tileset_file: str, tile_width: int, tile_height: int
+    ) -> list[pg.surface.Surface]:
         """
         Load a tileset from single file and split it into a table.
         The tileset consists of several tiles arranged in a row.
@@ -80,7 +82,7 @@ class Tileset:
         logger.info("Loading tileset from file %s.", tileset_file)
         image, _ = load_image(tileset_file, alpha=True)
         image_width, image_height = image.get_size()
-        tile_table: list[pg.Surface] = []
+        tile_table: list[pg.surface.Surface] = []
         for tile_x in range(0, image_width // tile_width):
             rect = (
                 tile_x * tile_width,

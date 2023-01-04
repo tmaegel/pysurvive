@@ -14,7 +14,7 @@ class Screen:
 
     _screen = None
 
-    def __new__(cls, rect: pg.Rect = None):
+    def __new__(cls, rect: pg.rect.Rect = None):
         if cls._screen is None:
             cls._screen = super().__new__(cls)
             if rect:

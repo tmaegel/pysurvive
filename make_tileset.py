@@ -9,7 +9,9 @@ from pygame.locals import SRCALPHA
 from pysurvive.utils import load_image
 
 
-def load_tile_from_filelist(files_path: str, tile_size: int) -> list[pg.Surface]:
+def load_tile_from_filelist(
+    files_path: str, tile_size: int
+) -> list[pg.surface.Surface]:
     tile_table = []
     if not os.path.isdir(files_path):
         print(f"Directory {files_path} doesnt exists.")

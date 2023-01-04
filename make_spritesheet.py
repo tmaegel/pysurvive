@@ -11,7 +11,7 @@ from pysurvive.utils import load_image
 SPRITE_SIZE = 512
 
 
-def load_spritesheet_from_filelist(files_path: str) -> list[pg.Surface]:
+def load_spritesheet_from_filelist(files_path: str) -> list[pg.surface.Surface]:
     sprite_table = []
     if not os.path.isdir(files_path):
         print(f"Directory {files_path} doesnt exists.")

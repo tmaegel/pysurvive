@@ -10,7 +10,7 @@ from pysurvive.game.core import Screen
 class TestScreen:
     @pytest.fixture()
     def singleton(self):
-        def _wrapper(rect: pg.Rect = None):
+        def _wrapper(rect: pg.rect.Rect = None):
             return Screen(rect)
 
         return _wrapper

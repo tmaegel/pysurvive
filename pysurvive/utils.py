@@ -18,7 +18,7 @@ class NoneSound:
 
 def load_image(
     filename: str, alpha: bool = False, colorkey: tuple[int, int, int] = None
-) -> tuple[pg.Surface, pg.Rect]:
+) -> tuple[pg.surface.Surface, pg.rect.Rect]:
     """
     Load an image from disk.
 

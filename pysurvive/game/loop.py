@@ -1,7 +1,14 @@
 #!/usr/bin/env python
 # coding=utf-8
 import pygame as pg
-from pygame.locals import K_ESCAPE, KEYDOWN, MOUSEBUTTONDOWN, MOUSEBUTTONUP, QUIT
+from pygame.locals import (
+    K_ESCAPE,
+    KEYDOWN,
+    MOUSEBUTTONDOWN,
+    MOUSEBUTTONUP,
+    MOUSEMOTION,
+    QUIT,
+)
 
 from pysurvive.config import FPS, GRAY_LIGHT2, MAP_DIR, RED_LIGHT
 from pysurvive.game.core import Camera, Screen
@@ -29,14 +36,16 @@ class Game:
         pg.display.set_caption("pysurvive")
         pg.transform.set_smoothscale_backend("SSE")
         # Turn off the mouse cursor.
-        pg.mouse.set_visible(0)
+        pg.mouse.set_visible(True)
         # Limit the number of allowed pygame events.
-        pg.event.set_allowed([QUIT, KEYDOWN, K_ESCAPE, MOUSEBUTTONDOWN, MOUSEBUTTONUP])
+        # pg.event.set_allowed(
+        #     [QUIT, KEYDOWN, K_ESCAPE, MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION]
+        # )
 
         self.fps_font = pg.font.SysFont("Arial", 14)
 
         # Absolute (start) position of the player (camera) in game world.
-        self.camera = Camera(0, 0)
+        self.camera = Camera(300, 300)
 
         # Prepare the shadow surface / screen.
         # self.screen_shadow = pg.Surface(self.screen.size)
