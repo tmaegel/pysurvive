@@ -7,7 +7,7 @@ from pathlib import Path
 import pygame as pg
 import pytiled_parser as pytiled
 
-from pysurvive.config import WHITE
+from pysurvive.config import RED, WHITE
 from pysurvive.game.core import Camera, Screen
 from pysurvive.logger import Logger
 from pysurvive.map.tileset import Tileset
@@ -87,13 +87,27 @@ class Level(pg.sprite.Sprite):
 
                     tile_index = tileset.get_tile_index(tile_id)
                     try:
+                        tile = tileset.get_tile(tile_id)
                         self.image.blit(
-                            tileset.get_tile(tile_id),
+                            tile.image,
                             (
                                 x * self.map_config.tile_size.width,
                                 y * self.map_config.tile_size.height,
                             ),
                         )
+                        # Draw debug border
+                        if tile.enter:
+                            pg.draw.rect(
+                                self.image,
+                                RED,
+                                pg.Rect(
+                                    x * self.map_config.tile_size.width,
+                                    y * self.map_config.tile_size.height,
+                                    tile.rect.width,
+                                    tile.rect.height,
+                                ),
+                                width=1,
+                            )
                     except IndexError:
                         logger.error(
                             "Error while accessing tile (%s) of tileset %r.",
@@ -102,29 +116,30 @@ class Level(pg.sprite.Sprite):
                         )
                         sys.exit(1)
 
-        for layer in self.map_config.layers:
-            # Exlude non ObjectLayer layers.
-            if not isinstance(layer, pytiled.layer.ObjectLayer):
-                continue
-
-            for tile_obj in layer.tiled_objects:
-                tileset = self.get_tileset(tile_obj.gid)
-                if not tileset:
-                    continue
-
-                tile_index = tileset.get_tile_index(tile_obj.gid)
-                try:
-                    self.image.blit(
-                        tileset.get_tile(tile_obj.gid),
-                        (tile_obj.coordinates.x, tile_obj.coordinates.y),
-                    )
-                except IndexError:
-                    logger.error(
-                        "Error while accessing tile (%s) of tileset %r.",
-                        tile_index,
-                        tileset,
-                    )
-                    sys.exit(1)
+        # for layer in self.map_config.layers:
+        #     # Exlude non ObjectLayer layers.
+        #     if not isinstance(layer, pytiled.layer.ObjectLayer):
+        #         continue
+        #
+        #     for tile_obj in layer.tiled_objects:
+        #         tileset = self.get_tileset(tile_obj.gid)
+        #         if not tileset:
+        #             continue
+        #
+        #         tile_index = tileset.get_tile_index(tile_obj.gid)
+        #         try:
+        #             tile = tileset.get_tile(tile_obj.gid)
+        #             self.image.blit(
+        #                 tile.image,
+        #                 (tile_obj.coordinates.x, tile_obj.coordinates.y),
+        #             )
+        #         except IndexError:
+        #             logger.error(
+        #                 "Error while accessing tile (%s) of tileset %r.",
+        #                 tile_index,
+        #                 tileset,
+        #             )
+        #             sys.exit(1)
 
     def update(self) -> None:
         """Update the map object."""

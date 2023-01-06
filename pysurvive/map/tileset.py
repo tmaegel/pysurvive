@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # coding=utf-8
-from typing import Union
+from typing import Any, Union
 
-import pygame as pg
 import pytiled_parser as pytiled
 
 from pysurvive.config import ROOT_PATH
 from pysurvive.logger import Logger
+from pysurvive.map.tile import Tile
 from pysurvive.utils import load_image
 
 logger = Logger()
@@ -18,7 +18,7 @@ class Tileset:
 
     def __init__(self, _config: pytiled.tileset.Tileset) -> None:
         self.config = _config
-        self.table = self._load(self.tileset_path, self.tile_width, self.tile_height)
+        self.tile_table: list[Tile] = self._load()
 
     def __str__(self) -> str:
         return (
@@ -43,55 +43,75 @@ class Tileset:
             return None
 
     @property
-    def tileset_path(self) -> Union[str, list[str]]:
-        """Returns the tileset path"""
+    def tileset_file(self) -> str:
+        """Returns the tileset file (including path)."""
         return str(ROOT_PATH) + "/" + str(self.config.image)
 
     @property
     def first_gid(self) -> int:
+        """Returns the first_gid (pytiled_parser specific)."""
         return self.config.firstgid
 
     @property
     def last_gid(self) -> int:
+        """Returns the last_gid (pytiled_parser specific)."""
         return self.config.firstgid + (self.config.tile_count - 1)
 
     @property
     def tile_width(self) -> int:
+        """Returns tile width in pixel."""
         return self.config.tile_width
 
     @property
     def tile_height(self) -> int:
+        """Returns tile height in pixel."""
         return self.config.tile_height
 
+    @property
+    def properties(self) -> dict[str, Any]:
+        if self.config.properties:
+            return self.config.properties
+        else:
+            return {}
+
+    def get_property(self, name: str) -> Any:
+        """Returns the property value from `name`."""
+        for prop_name, prop_value in self.properties.items():
+            try:
+                if prop_name == name:
+                    return prop_value
+            except AttributeError:
+                return None
+
     def get_tile_index(self, tile_id: int) -> int:
-        """Returns the tile index of the table by id."""
+        """Returns the tile index of the tile_table by id."""
         return tile_id - self.first_gid
 
-    def get_tile(self, tile_id: int) -> pg.surface.Surface:
-        """Returns the tile (image) by id."""
-        return self.table[tile_id - self.first_gid]
+    def get_tile(self, tile_id: int) -> Tile:
+        """Returns the tile object by id."""
+        return self.tile_table[tile_id - self.first_gid]
 
-    @staticmethod
-    def _load(
-        tileset_file: str, tile_width: int, tile_height: int
-    ) -> list[pg.surface.Surface]:
+    def _load(self) -> list[Tile]:
         """
-        Load a tileset from single file and split it into a table.
+        Load a tileset from single file and split it into a tile_table.
         The tileset consists of several tiles arranged in a row.
         """
-        logger.info("Loading tileset from file %s.", tileset_file)
-        image, _ = load_image(tileset_file, alpha=True)
-        image_width, image_height = image.get_size()
-        tile_table: list[pg.surface.Surface] = []
-        for tile_x in range(0, image_width // tile_width):
+        logger.info("Loading tileset from file %s.", self.tileset_file)
+        tileset_image, _ = load_image(self.tileset_file, alpha=True)
+        tileset_width, _ = tileset_image.get_size()
+        tile_table: list[Tile] = []
+        for tile_x in range(0, tileset_width // self.tile_width):
             rect = (
-                tile_x * tile_width,
+                tile_x * self.tile_width,
                 0,
-                tile_width,
-                tile_height,
+                self.tile_width,
+                self.tile_height,
             )
             # Subsurface doesn’t create copies in memory.
-            tile_image = image.subsurface(rect)
-            tile_table.append(tile_image)
+            tile_image = tileset_image.subsurface(rect)
+            tile = Tile(
+                tile_image, self.get_property("enter"), self.get_property("block")
+            )
+            tile_table.append(tile)
 
         return tile_table
