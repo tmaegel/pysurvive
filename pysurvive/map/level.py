@@ -96,7 +96,7 @@ class Level(pg.sprite.Sprite):
                             ),
                         )
                         # Draw debug border
-                        if tile.enter:
+                        if not tile.enter:
                             pg.draw.rect(
                                 self.image,
                                 RED,
