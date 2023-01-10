@@ -110,7 +110,9 @@ class Tileset:
             # Subsurface doesn’t create copies in memory.
             tile_image = tileset_image.subsurface(rect)
             tile = Tile(
-                tile_image, self.get_property("enter"), self.get_property("block")
+                tile_image,
+                enter=self.get_property("enter"),
+                block=self.get_property("block"),
             )
             tile_table.append(tile)
 

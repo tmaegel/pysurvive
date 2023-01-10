@@ -8,7 +8,7 @@ from pysurvive.config import SCREEN_RECT
 class Screen:
 
     """
-    Simple sprite that represent the screen and is used to detect
+    Class that represent the screen and is used to detect
     wheather objects are visible on the screen.
     """
 
@@ -104,10 +104,10 @@ class Camera:
 
     def get_relative_position(self, x: int, y: int) -> tuple[int, int]:
         """
-        Returns the relative position of a coordinate in relation to the
-        camera position.
+        Returns the relative position of a coordinate in relation
+        to the camera position.
         """
         return (
             round(x - self.x),
-            round(x - self.y),
+            round(y - self.y),
         )

@@ -45,7 +45,7 @@ class Game:
         self.fps_font = pg.font.SysFont("Arial", 14)
 
         # Absolute (start) position of the player (camera) in game world.
-        self.camera = Camera(300, 300)
+        self.camera = Camera(100, 300)
 
         # Prepare the shadow surface / screen.
         # self.screen_shadow = pg.Surface(self.screen.size)
@@ -78,7 +78,7 @@ class Game:
         #             self.unique_block_points.append(point)
 
         # Map
-        self.map_sprites = pg.sprite.RenderPlain((Level(f"{MAP_DIR}/map.json"),))
+        self.level = Level(f"{MAP_DIR}/map.json")
         # Player
         self.player_sprites = PlayerGroup()
 
@@ -118,7 +118,7 @@ class Game:
             # Updating
             #
 
-            self.map_sprites.update()
+            self.level.update()
             self.player_sprites.update(dt, (direction_x, direction_y))
             # Update all objects here otherwise the mechanism for
             # detecting which objects are on the screen is overridden.
@@ -128,7 +128,7 @@ class Game:
             # Drawing
             #
 
-            self.map_sprites.draw(self.window_surface)
+            self.level.draw(self.window_surface)
 
             # if FLASHLIGHT_ENABLE:
             #     # Currently, all vertices within a virtual screen of
