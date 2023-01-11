@@ -120,9 +120,6 @@ class Game:
 
             self.level.update()
             self.player_sprites.update(dt, (direction_x, direction_y))
-            # Update all objects here otherwise the mechanism for
-            # detecting which objects are on the screen is overridden.
-            # self.enemy_sprites.update(dt, self.get_offset())
 
             #
             # Drawing
@@ -138,10 +135,7 @@ class Game:
             #     self.player_sprites.light.draw(self.screen_shadow)
             #     self.window_surface.blit(self.screen_shadow, (0, 0))
 
-            # self.block_render_sprites.draw(self.window_surface)
             self.player_sprites.draw(self.window_surface)
-            # @todo: Do not draw all enemies later.
-            # self.enemy_sprites.draw(self.window_surface)
 
             # Debugging
             # Draw navmesh
