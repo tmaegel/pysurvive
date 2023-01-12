@@ -9,26 +9,32 @@ from typing import Optional
 import pygame as pg
 import pytiled_parser as pytiled
 
+from pysurvive.game.core import Screen
 from pysurvive.logger import Logger
 from pysurvive.map.tileset import Tileset
 
 logger = Logger()
 
 
-class Level(pg.sprite.RenderPlain):
+class TileGroup(pg.sprite.RenderPlain):
+    def __init__(self):
+        super().__init__()
+
+
+class Level:
 
     """
     Load a map file from disk and draw it on a surface.
-    The level object acts as a group which contains every tile
-    object from the map.
+    The level object acts wrapper around multiple groups which
+    contains every tile object from the map.
 
     In addition, the respective tile objects are divided
     into further groups for differentiation according to
-    the respective properties (block, enter, ...).
+    the respective properties (block, enter, close to player).
     """
 
     def __init__(self, _map_file: str) -> None:
-        super().__init__()
+        self.screen = Screen()
 
         logger.info("Loading map from file %s.", _map_file)
         if not file_exists(_map_file):
@@ -45,12 +51,16 @@ class Level(pg.sprite.RenderPlain):
             tileset = Tileset(ts_config)
             self.tilesets[ts_id] = tileset
 
+        # The whole list of tiles in one group.
+        self.tiles_all = TileGroup()
+        # Tiles that should draw on the screen.
+        self.tiles_screen = TileGroup()
         # Includes only objects which cannot be entered.
-        self.not_enterable = pg.sprite.RenderPlain()
+        self.tiles_not_enterable = TileGroup()
         # Includes only objects which do not block (e.g. shooting)
-        self.blockable = pg.sprite.RenderPlain()
+        self.tiles_blockable = TileGroup()
         # @todo
-        # self.close_to_player = pg.sprite.RenderPlain()
+        # self.close_to_player = TileGroup()
 
         self._initialize()
 
@@ -83,11 +93,11 @@ class Level(pg.sprite.RenderPlain):
                         tile.x = x * self.map_config.tile_size.width
                         tile.y = y * self.map_config.tile_size.height
                         # Add a copy of tile from tileset.
-                        self.add((tile,))
+                        self.tiles_all.add((tile,))
                         if not tile.enter:
-                            self.not_enterable.add((tile,))
+                            self.tiles_not_enterable.add((tile,))
                         if tile.block:
-                            self.blockable.add((tile,))
+                            self.tiles_blockable.add((tile,))
                     except IndexError:
                         logger.error(
                             "Error while accessing tile (%s) of tileset %r.",
@@ -107,24 +117,22 @@ class Level(pg.sprite.RenderPlain):
 
         return None
 
+    def update(self, *args, **kwargs):
+        """
+        Call the update method of every tile object.
+        Check which tile is one the screen.
+        """
+        self.tiles_screen.empty()
+        self.tiles_screen.add(
+            pg.sprite.spritecollide(self.screen, self.tiles_all, False)
+        )
+        # Update all tiles on the screen.
+        self.tiles_all.update(*args, **kwargs)
+
     def draw(self, surface: pg.surface.Surface) -> None:
         """
         Draw all sprites (tiles) onto the surface
         Group.draw(surface): return Rect_list
         Draws all of the member sprites onto the given surface.
         """
-        #
-        # @todo: Draw only sprites on the screen.
-        #
-        sprites = self.sprites()
-        if hasattr(surface, "blits"):
-            self.spritedict.update(
-                zip(sprites, surface.blits((spr.image, spr.rect) for spr in sprites))
-            )
-        else:
-            for spr in sprites:
-                self.spritedict[spr] = surface.blit(spr.image, spr.rect)
-        self.lostsprites = []
-        dirty = self.lostsprites
-
-        return
+        self.tiles_screen.draw(surface)

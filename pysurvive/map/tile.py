@@ -22,6 +22,7 @@ class Tile(pg.sprite.Sprite):
         self.camera = Camera()
 
         # Real position in the game world.
+        # Should never change for static objects.
         self.x = x
         self.y = y
 
