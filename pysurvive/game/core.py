@@ -13,7 +13,6 @@ class Singleton(type):
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
 
-        print(cls._instances[cls])
         return cls._instances[cls]
 
 
@@ -23,6 +22,20 @@ class Screen(pg.rect.Rect, metaclass=Singleton):
     Class that represent the screen and is used to detect
     wheather objects are visible on the screen.
     """
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        # Calculate a slightly larger rectangle from the screen.
+        # Otherwise, there will be white flickering at the edges
+        # when drawing the sprites on the screen.
+        rough_w = self.width * 0.01
+        rough_h = self.height * 0.01
+        self.rect_rough = pg.Rect(
+            self.x - rough_w,
+            self.y - rough_w,
+            self.width + rough_w * 2,
+            self.height + rough_h * 2,
+        )
 
     def __str__(self) -> str:
         return f"Screen (size={self.width}x{self.height})"
@@ -34,8 +47,11 @@ class Screen(pg.rect.Rect, metaclass=Singleton):
 
     @property
     def rect(self) -> pg.rect.Rect:
-        """The function spritecollide expects a property rect."""
-        return self
+        """
+        The function spritecollide expects a property rect.
+        Returns the rough rect of the screen here.
+        """
+        return self.rect_rough
 
 
 class Camera(metaclass=Singleton):
