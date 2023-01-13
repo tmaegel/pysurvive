@@ -36,29 +36,31 @@ class Tile(pg.sprite.Sprite):
         self._render()
 
     def __deepcopy__(self, memo):
+        """Create a deep copy of this object."""
         return Tile(self.image, self.rect.x, self.rect.y, self.enter, self.block)
 
     @property
-    def virt_x(self) -> int:
-        """Get the virtual x coordinate of the tile on the screen."""
+    def rel_x(self) -> int:
+        """Get the relative x coordinate of the tile on the screen."""
         return self.rect.x
 
-    @virt_x.setter
-    def virt_x(self, x: int) -> None:
-        """Set the virtual x coordinate of the tile on the screen."""
+    @rel_x.setter
+    def rel_x(self, x: int) -> None:
+        """Set the relative x coordinate of the tile on the screen."""
         self.rect.x = x
 
     @property
-    def virt_y(self) -> int:
-        """Get the virtual y coordinate of the tile on the screen."""
+    def rel_y(self) -> int:
+        """Get the rel y coordinate of the tile on the screen."""
         return self.rect.y
 
-    @virt_y.setter
-    def virt_y(self, y: int) -> None:
-        """Set the virtual y coordinate of the tile on the screen."""
+    @rel_y.setter
+    def rel_y(self, y: int) -> None:
+        """Set the rel y coordinate of the tile on the screen."""
         self.rect.y = y
 
     def _render(self) -> None:
+        """Render additional content on the sprite image."""
         # Draw debug border
         if DEBUG_SPRITE and not self.enter:
             pg.draw.rect(
@@ -78,4 +80,4 @@ class Tile(pg.sprite.Sprite):
         Update the tile object position relative
         to the camera position.
         """
-        self.virt_x, self.virt_y = self.camera.get_relative_position(self.x, self.y)
+        self.rel_x, self.rel_y = self.camera.get_relative_position(self.x, self.y)
