@@ -80,4 +80,4 @@ class Tile(pg.sprite.Sprite):
         Update the tile object position relative
         to the camera position.
         """
-        self.rel_x, self.rel_y = self.camera.get_relative_position(self.x, self.y)
+        self.rel_x, self.rel_y = self.camera.get_rel_position(self.x, self.y)

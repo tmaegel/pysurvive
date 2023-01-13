@@ -25,7 +25,7 @@ class Screen(pg.rect.Rect, metaclass=Singleton):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        # Calculate a slightly larger rectangle from the screen.
+        # Calculate a slightly larger rectangle of the screen.
         # Otherwise, there will be white flickering at the edges
         # when drawing the sprites on the screen.
         rough_w = self.width * 0.01
@@ -84,7 +84,7 @@ class Camera(metaclass=Singleton):
         self.x = round(self.x - delta[0])
         self.y = round(self.y - delta[1])
 
-    def get_relative_position(self, x: int, y: int) -> tuple[int, int]:
+    def get_rel_position(self, x: int, y: int) -> tuple[int, int]:
         """
         Returns the relative position of a coordinate in relation
         to the global camera position in the center of the screen.
