@@ -25,6 +25,8 @@ class TestCamera:
         camera_1 = singleton()
         camera_2 = singleton()
         assert id(camera_1) == id(camera_2)
+        assert camera_1.position == (0, 0)
+        assert camera_2.position == (0, 0)
         delete()
 
     def test_camera__singleton_with_args_1(self, singleton, delete):
@@ -32,8 +34,8 @@ class TestCamera:
         camera_1 = singleton(500, 300)
         camera_2 = singleton(100, 200)
         assert id(camera_1) == id(camera_2)
-        assert camera_1.position_center == (500, 300)
-        assert camera_2.position_center == (500, 300)
+        assert camera_1.position == (500, 300)
+        assert camera_2.position == (500, 300)
         delete()
 
     def test_camera__singleton_with_args_2(self, singleton, delete):
@@ -41,6 +43,6 @@ class TestCamera:
         camera_1 = singleton(500, 300)
         camera_2 = singleton()
         assert id(camera_1) == id(camera_2)
-        assert camera_1.position_center == (500, 300)
-        assert camera_2.position_center == (500, 300)
+        assert camera_1.position == (500, 300)
+        assert camera_2.position == (500, 300)
         delete()

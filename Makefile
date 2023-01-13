@@ -8,7 +8,7 @@ test:
 	coverage report
 
 tox:
-	tox -e py39
+	tox -e py310
 
 lint:
 	python -m flake8

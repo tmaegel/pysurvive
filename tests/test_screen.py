@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
+from typing import Optional
+
 import pygame as pg
 import pytest
 
@@ -10,7 +12,7 @@ from pysurvive.game.core import Screen
 class TestScreen:
     @pytest.fixture()
     def singleton(self):
-        def _wrapper(rect: pg.rect.Rect = None):
+        def _wrapper(rect: Optional[pg.rect.Rect] = SCREEN_RECT):
             return Screen(rect)
 
         return _wrapper
@@ -24,7 +26,7 @@ class TestScreen:
 
     def test_screen__singleton_without_args(self, singleton, delete):
         """Test the screen singleton without arguments."""
-        screen_1 = singleton()
+        screen_1 = singleton(SCREEN_RECT)
         screen_2 = singleton()
         assert id(screen_1) == id(screen_2)
         assert screen_1.width == SCREEN_RECT.width
