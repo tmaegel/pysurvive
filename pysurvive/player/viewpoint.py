@@ -18,14 +18,21 @@ class Viewpoint(pg.sprite.Sprite):
         self._render()
 
     @property
+    def pos(self) -> tuple[int, int]:
+        """Get the x, y coordinate of the mouse cursor."""
+        return pg.mouse.get_pos()
+
+    @property
     def x(self) -> int:
         """Get the x coordinate of the mouse cursor."""
-        return pg.mouse.get_pos()[0]
+        x, _ = self.pos
+        return x
 
     @property
     def y(self) -> int:
         """Get the y coordinate of the mouse cursor."""
-        return pg.mouse.get_pos()[1]
+        _, y = self.pos
+        return y
 
     def _render(self) -> None:
         """
@@ -50,5 +57,7 @@ class Viewpoint(pg.sprite.Sprite):
         self.rect.centerx = self.x
         self.rect.centery = self.y
 
-    def draw_border(self, surface: pg.Surface, sprite: pg.sprite.Sprite):
+    def draw_border(
+        self, surface: pg.surface.Surface, sprite: pg.sprite.Sprite
+    ) -> None:
         pass

@@ -4,14 +4,13 @@ import math
 
 import pygame as pg
 
-from pysurvive.class_toolchain import Animation
-from pysurvive.config import DEBUG_SPRITE, FLASHLIGHT_ENABLE, RED, SOUND_DIR
+from pysurvive.config import DEBUG_SPRITE, FLASHLIGHT_ENABLE, GREEN, RED, SOUND_DIR
 from pysurvive.flashlight import Flashlight
 from pysurvive.game.core import Camera, Screen
 from pysurvive.player.misc import (
+    AnimatedSprite,
     MovementState,
-    PlayerSpritesheet,
-    RotatableImage,
+    Spritesheet,
     WeaponsState,
 )
 from pysurvive.player.viewpoint import Viewpoint
@@ -33,7 +32,7 @@ class PlayerGroup(pg.sprite.RenderPlain):
             )
         )
 
-    def draw(self, surface: pg.Surface) -> list[pg.Rect]:
+    def draw(self, surface: pg.surface.Surface) -> list[pg.rect.Rect]:
         """
         Overwrite orginal draw method of RenderPlain.
         """
@@ -56,7 +55,7 @@ class PlayerGroup(pg.sprite.RenderPlain):
         return dirty
 
 
-class Player(Animation):
+class Player(AnimatedSprite):
 
     """Player object/sprite."""
 
@@ -65,24 +64,20 @@ class Player(Animation):
         self.group = _group  # Reference to the group with other player object.
         self.screen = Screen()
         self.camera = Camera()
-        self.light = None  # Reference to the players flashlight.
-        self.x = self.camera.centerx  # Absolute x coordinate of player in the world.
-        self.y = self.camera.centery  # Absolute x coordinate of player in the world.
-        self.speed = 6
-        self.direction = (0, 0)
-        self.player_type = "default"
-        self.movement_state = MovementState.IDLE
-        self.old_movement_state = self.movement_state
         self.weapon_state = WeaponsState.HANDGUN
 
-        # Contains the original (scaled only) images of the player object.
-        # @todo: Loading other weapon-movement images too.
-        self.images = PlayerSpritesheet(
-            custom_path=f"{self.player_type}/{self.weapon_state.name.lower()}"
-        )
-        self.image = self.active_image
-        self.mask = pg.mask.from_surface(self.image)  # For collision detection.
-        # Acts as the virtual position (center of the screen) of the player.
+        # Contains the original (scaled only) images of the player.
+        for movement in MovementState:
+            # @todo: Loading multiple weapons sprites.
+            for weapon in (self.weapon_state,):
+                sprites = Spritesheet(
+                    f"player/default/{weapon.name.lower()}/{movement.name.lower()}"
+                )
+                self.sprites.append(sprites)
+
+        # Initialize sprite image.
+        self.image = self.sprite.image
+        # Rect acts as the virtual position (center of the screen).
         self.rect = self.image.get_rect()
         # Virtual position the image at the center of the screen
         # The position of image/rect used for drawing only
@@ -92,39 +87,44 @@ class Player(Animation):
         self.sound_shot = load_sound(f"{SOUND_DIR}/shot/pistol.wav")
         self.sound_reload = load_sound(f"{SOUND_DIR}/reload/pistol.wav")
 
-        if FLASHLIGHT_ENABLE:
-            # Initialize the light (flashlight) with x and y from player
-            # The initial coordinates are used for drawing only.
-            self.light = Flashlight(self, self.x, self.y)
+    @property
+    def x(self) -> int:
+        """Returns the absolute x coordinate of the player."""
+        return self.camera.x
 
     @property
-    def active_image_object(self) -> RotatableImage:
-        """Returns the active image object (RotatableImage)."""
-        return self.images[self.movement_state.value][self.frame]
-
-    @property
-    def active_image(self) -> pg.Surface:
-        """Returns the active raw image of the active RotatableImage."""
-        return self.active_image_object.image
+    def y(self) -> int:
+        """Returns the absolute y coordinate of the player."""
+        return self.camera.y
 
     @property
     def virt_pos(self) -> tuple[int, int]:
-        """Get the virtual rect position of the player on the screen."""
+        """Get the virtual position (rect) of the player on the screen."""
         return self.rect.center
 
     @property
     def virt_x(self) -> int:
-        """Get the virtual x coordinate of the player on the screen."""
+        """Get the virtual x coordinate (rect) of the player on the screen."""
         return self.rect.centerx
 
     @property
     def virt_y(self) -> int:
-        """Get the virtual y coordinate of the player on the screen."""
+        """Get the virtual y coordinate (rect) of the player on the screen."""
         return self.rect.centery
 
     @property
+    def bounding_rect(self) -> tuple[int, int]:
+        """Returns the bounding rect of the rotated image and center it."""
+        bounding_rect = self.image.get_bounding_rect()
+        bounding_rect.center = (
+            self.virt_x + bounding_rect.centerx - self.rect.width // 2,
+            self.virt_y + bounding_rect.centery - self.rect.height // 2,
+        )
+        return bounding_rect
+
+    @property
     def angle(self) -> float:
-        """Get the angle of the player position on the screen."""
+        """Get the angle of the player based of the cursor position on the screen."""
         return (
             math.atan2(
                 self.group.viewpoint.y - self.virt_y,
@@ -135,7 +135,7 @@ class Player(Animation):
 
     @property
     def weapon_angle(self) -> float:
-        """Get the angle of the weapon position on the screen."""
+        """Get the angle of the weapon based of the cursor position on the screen."""
         return (
             math.atan2(
                 self.group.viewpoint.y - self.virt_weapon_y,
@@ -188,25 +188,10 @@ class Player(Animation):
             + math.sin(angle) * offset2
         )
 
-    @property
-    def move_vector(self) -> tuple[float, float]:
-        """
-        If the player moves diagonal add only the half of the speed
-        in each direction.
-        """
-        if self.direction[0] != 0 and self.direction[1] != 0:
-            # Based on the 45° angle
-            return (
-                -1 * self.direction[0] * abs(math.cos(math.pi / 4)) * self.speed,
-                -1 * self.direction[1] * abs(math.sin(math.pi / 4)) * self.speed,
-            )
-        return (
-            -1 * self.direction[0] * self.speed,
-            -1 * self.direction[1] * self.speed,
-        )
-
-    def draw_border(self, surface: pg.Surface, sprite: pg.sprite.Sprite):
-        pg.draw.rect(surface, RED, sprite.rect, width=1)
+    def draw_border(
+        self, surface: pg.surface.Surface, sprite: pg.sprite.Sprite
+    ) -> None:
+        pg.draw.rect(surface, GREEN, self.bounding_rect, width=1)
 
     def update(self, dt: int, direction: tuple[int, int]) -> None:
         """Update the player object."""
@@ -222,48 +207,12 @@ class Player(Animation):
             # Time that already has passed since last update.
             self._next_update %= self._period
             # Limit the frame to the length of the image list.
-            self.frame %= len(self.images[self.movement_state.value])
-
+            self.frame %= len(self.sprites[self.movement_state.value])
             # Handle the different images for animation here
             self.animate()
 
-        # @todo: Not time based yet
-        # Check for collision before
-        # Allow moving only if there is no collision detected
-        if not self.collide_by_move():
-            self.move()
-        # Rotate the iamge
-        # if not self.collide_by_rotation(self.weapon_angle):
-        self.rotate(self.weapon_angle)
-        if FLASHLIGHT_ENABLE:
-            # Update flashlight of player
-            self.light.update(self.x, self.y)
-
-    def move(self) -> None:
-        """Move the player in the specific direction."""
-        dx, dy = self.move_vector
-        self.camera.position = (dx, dy)
-        # Add the negate value of dx and dy to the player position
-        self.x = round(self.x - dx)
-        self.y = round(self.y - dy)
-
-    def rotate(self, angle: float) -> None:
-        """
-        Rotate the player object on the center. Need to negate the
-        result, if the image starts at the wrong direction.
-
-        :param angle: Rotation angle
-        """
-        self.image = self.active_image_object.rotate(angle)
-        # Recreating mask after every rotation
-        self.mask = pg.mask.from_surface(self.image)
-        # Keep the image on the same position.
-        # Save its current center.
-        x, y = self.virt_pos
-        # Replace old rect with new rect.
-        self.rect = self.image.get_rect()
-        # Put the new rect's center at old center.
-        self.rect.center = (x, y)
+        self.move()
+        self.rotate()
 
     def animate(self) -> None:
         # If not attacking.
@@ -275,85 +224,15 @@ class Player(Animation):
                 # Idle state
                 self._switch_movement(MovementState.IDLE)
 
-    def _switch_movement(self, movement_state: MovementState) -> None:
-        self.old_movement_state = self.movement_state  # Save old state
-        self.movement_state = movement_state
-        # Reset frame if movement_state differ.
-        if self.old_movement_state != self.movement_state:
-            self.frame = 0
-
-    def collide_by_move(self) -> bool:
-        """
-        First check a simple collisions detection (collide rect).
-        Then check for a specific collision (mask) for a better collisions.
-        """
-
-        # Stop the movement for collision checks
-        self.camera.position = (0, 0)
-
-        # Backup the position of player
-        player_rect_x = self.virt_x
-        player_rect_y = self.virt_y
-
-        # Get the currect movement vector to simulate the movement
+    def move(self) -> None:
+        """Move the player in the specific direction."""
         dx, dy = self.move_vector
+        self.camera.move((dx, dy))
 
-        # Simulate the movement by move the rect object
-        self.rect.centerx = round(self.virt_x - dx)
-        self.rect.centery = round(self.virt_y - dy)
-
-        collision = False
-        # for block in self._collide_by_rect():
-        #     # Make better check here and handle the collision.
-        #     point = pg.sprite.collide_mask(self, block)
-        #     if point is not None:
-        #         collision = True
-        #         break
-
-        # Reset the simulated changes of player
-        self.rect.centerx = player_rect_x
-        self.rect.centery = player_rect_y
-
-        return collision
-
-    def collide_by_rotation(self, angle: float) -> bool:
-        # Backup the player image/mask
-        player_image = self.image
-        player_mask = self.mask
-
-        def reset() -> None:
-            self.image = player_image
-            self.mask = player_mask
-            # Keep the image on the same position.
-            # Save its current center.
-            x, y = self.rect.center
-            # Replace old rect with new rect.
-            self.rect = self.image.get_rect()
-            # Put the new rect's center at old center.
-            self.rect.center = (x, y)
-
-        # Simulate the rotation of the player
-        self.rotate(angle)
-
-        collision = False
-        for block in self._collide_by_rect():
-            # Make better check here and handle the collision.
-            point = pg.sprite.collide_mask(self, block)
-            if point is not None:
-                collision = True
-                break
-
-        # Reset the simulated changes of player
-        reset()
-
-        return collision
-
-    def _collide_by_rect(self) -> list[pg.sprite.Sprite]:
-        block_hit_list = pg.sprite.spritecollide(
-            self,
-            self.group.game.block_render_sprites,
-            False,
-            collided=pg.sprite.collide_rect,
-        )
-
-        return block_hit_list
+    def rotate(self) -> None:
+        """
+        Rotate the player object on the center. Need to negate the
+        result, if the image starts at the wrong direction.
+        """
+        # Rotate image and replace old rect with new rect.
+        self.image, self.rect = self.sprite.rotate(self.virt_x, self.virt_y, self.angle)

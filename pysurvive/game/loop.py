@@ -10,7 +10,7 @@ from pygame.locals import (
     QUIT,
 )
 
-from pysurvive.config import FPS, GRAY_LIGHT2, MAP_DIR, RED_LIGHT
+from pysurvive.config import FPS, GRAY_LIGHT2, MAP_DIR, RED_LIGHT, SCREEN_RECT
 from pysurvive.game.core import Camera, Screen
 from pysurvive.logger import Logger
 from pysurvive.map.level import Level
@@ -29,7 +29,7 @@ class Game:
         self.clock = pg.time.Clock()
         # Sprite that represent the screen.
         # Used to determine whether elements are in the viewing area.
-        self.screen = Screen()
+        self.screen = Screen(SCREEN_RECT)
         # Set the height and width of the screen.
         self.window_surface = pg.display.set_mode(self.screen.size)
         # Set the window title.
@@ -45,7 +45,7 @@ class Game:
         self.fps_font = pg.font.SysFont("Arial", 14)
 
         # Absolute (start) position of the player (camera) in game world.
-        self.camera = Camera(100, 300)
+        self.camera = Camera(150, 600)
 
         # Prepare the shadow surface / screen.
         # self.screen_shadow = pg.Surface(self.screen.size)
@@ -99,11 +99,11 @@ class Game:
                     self.running = False
                 elif event.type == KEYDOWN and event.key == K_ESCAPE:
                     self.running = False
-                elif event.type == MOUSEBUTTONDOWN:
-                    if event.button == 1:
-                        self.player_sprites.player.shot()
-                    elif event.button == 3:
-                        self.player_sprites.player.reload()
+                # elif event.type == MOUSEBUTTONDOWN:
+                #     if event.button == 1:
+                #         self.player_sprites.player.shot()
+                #     elif event.button == 3:
+                #         self.player_sprites.player.reload()
                 elif event.type == MOUSEBUTTONUP:
                     pass
 

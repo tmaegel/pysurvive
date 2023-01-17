@@ -5,21 +5,6 @@ from typing import Optional
 
 import pygame as pg
 
-from pysurvive.config import FPS
-
-
-class Animation(pg.sprite.Sprite):
-    def __init__(self) -> None:
-        super().__init__()
-        # Contains a list of images/frames.
-        self.images = []
-        # Current image of the animation sequence/images.
-        self.frame = 0
-        # Next time it has to be updated in ms.
-        self._next_update = 0
-        # Frequency/period of the animation in ms.
-        self._period = 1500.0 / FPS
-
 
 class LineSegment:
 
