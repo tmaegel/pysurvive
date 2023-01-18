@@ -1,4 +1,4 @@
 numpy==1.22.4
 pygame==2.1.2
-pytiled-parser==2.0.1
+pytiled-parser==2.2.1
 triangle==20220202
