@@ -56,9 +56,9 @@ class Level:
         # Tiles that should draw on the screen.
         self.tiles_screen = TileGroup()
         # Includes only objects which cannot be entered.
-        self.tiles_not_enterable = TileGroup()
+        self.tiles_collision_move = TileGroup()
         # Includes only objects which do not block (e.g. shooting)
-        self.tiles_blockable = TileGroup()
+        self.tiles_collision_bullet = TileGroup()
         # @todo
         # self.close_to_player = TileGroup()
 
@@ -95,9 +95,9 @@ class Level:
                         # Add a copy of tile from tileset.
                         self.tiles_all.add((tile,))
                         if not tile.enter:
-                            self.tiles_not_enterable.add((tile,))
+                            self.tiles_collision_move.add((tile,))
                         if tile.block:
-                            self.tiles_blockable.add((tile,))
+                            self.tiles_collision_bullet.add((tile,))
                     except IndexError:
                         logger.error(
                             "Error while accessing tile (%s) of tileset %r.",

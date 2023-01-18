@@ -34,25 +34,71 @@ class RotatableImage:
 
     """Represents a single image of a spritesheet."""
 
+    __slots__ = (
+        "image",
+        "rect",
+        "rotated_images",
+        "rotated_bounding_rects",
+    )
+
+    # For example, an accuracy of 10 results in
+    # 36 rotated images at 360 degrees.
+    rotation_accuracy = 5
+
     def __init__(self, image: pg.surface.Surface) -> None:
         self.image = self._scale(image)
+        self.rect = self.image.get_rect()
+        self.rotated_images: list[pg.surface.Surface] = []
+        self.rotated_bounding_rects: list[pg.rect.Rect] = []
 
-    def rotate(
-        self, x: int, y: int, angle: float
-    ) -> tuple[pg.surface.Surface, pg.rect.Rect]:
+        self._pre_rotate()
+
+    def angle_to_radian(self, degree: int) -> float:
+        """Angle from degree to radian."""
+        return -1 * degree * math.pi / 180
+
+    def angle_to_degree(self, radian: float) -> int:
+        """Angle from radian to degree."""
+        return int(-1 * radian * 180 / math.pi)
+
+    def rotate(self, degree: int) -> tuple[pg.surface.Surface, pg.rect.Rect]:
         """
-        R the surfaces and rect based on the original one.
+        Rotate the surface and rect based on the original one.
         Keep the image on the same position.
         """
-        image = pg.transform.rotate(
-            self.image,
-            (-1 * angle * 180 / math.pi),
-        )
+        image = pg.transform.rotate(self.image, degree)
+        rect = image.get_rect()
+        # Put the new rect's center at old center.
+        rect.center = (self.rect.centerx, self.rect.centery)
+
+        return image, rect
+
+    def get_rotated_image(
+        self, angle: float, x: int, y: int
+    ) -> tuple[pg.surface.Surface, pg.rect.Rect, pg.rect.Rect]:
+        """Returns the pre rotated image, rect and the resulting bounding rect."""
+        degree = abs(self.angle_to_degree(angle))
+        degree_index = degree // self.rotation_accuracy
+        image = self.rotated_images[degree_index]
         rect = image.get_rect()
         # Put the new rect's center at old center.
         rect.center = (x, y)
+        # Get the pre-calculated bounding rect and center it.
+        bounding_rect = self.rotated_bounding_rects[degree_index].copy()
+        bounding_rect.center = (
+            x + bounding_rect.centerx - rect.width // 2,
+            y + bounding_rect.centery - rect.height // 2,
+        )
 
-        return image, rect
+        return image, rect, bounding_rect
+
+    def _pre_rotate(self) -> None:
+        """Pre-rotate the image within a range of angles."""
+        for degree in range(0, 360, self.rotation_accuracy):
+            # Negative angle amounts will rotate clockwise.
+            image, _ = self.rotate(-1 * degree)
+            self.rotated_images.append(image)
+            self.rotated_bounding_rects.append(image.get_bounding_rect())
 
     @staticmethod
     def _scale(image: pg.surface.Surface, scale: int = 2) -> pg.surface.Surface:
@@ -126,6 +172,12 @@ class Spritesheet:
     Sprites of an spritesheet are referenced by an index which
     is defined by the frame.
     """
+
+    __slots__ = (
+        "sprite_size",
+        "spritesheet_path",
+        "sprites",
+    )
 
     spritesheet_name = "spritesheet.png"
 

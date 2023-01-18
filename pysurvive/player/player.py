@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # coding=utf-8
 import math
+from functools import cached_property
 
 import pygame as pg
 
-from pysurvive.config import DEBUG_SPRITE, FLASHLIGHT_ENABLE, GREEN, RED, SOUND_DIR
-from pysurvive.flashlight import Flashlight
+from pysurvive.config import DEBUG_SPRITE, GREEN, SOUND_DIR
 from pysurvive.game.core import Camera, Screen
+from pysurvive.map.level import Level
+from pysurvive.map.tile import Tile
 from pysurvive.player.misc import (
     AnimatedSprite,
     MovementState,
@@ -21,10 +23,13 @@ class PlayerGroup(pg.sprite.RenderPlain):
 
     """Sprite group that contains all drawable player sprites."""
 
-    def __init__(self) -> None:
+    def __init__(self, _level: Level) -> None:
         super().__init__()
+        self.level = _level  # Reference to the level object.
+        self.screen = Screen()
+        self.camera = Camera()
         self.viewpoint = Viewpoint()
-        self.player = Player(self)  # Absolute position in game world.
+        self.player = Player(self)
         self.add(
             (
                 self.viewpoint,
@@ -62,8 +67,6 @@ class Player(AnimatedSprite):
     def __init__(self, _group) -> None:
         super().__init__()
         self.group = _group  # Reference to the group with other player object.
-        self.screen = Screen()
-        self.camera = Camera()
         self.weapon_state = WeaponsState.HANDGUN
 
         # Contains the original (scaled only) images of the player.
@@ -78,24 +81,26 @@ class Player(AnimatedSprite):
         # Initialize sprite image.
         self.image = self.sprite.image
         # Rect acts as the virtual position (center of the screen).
-        self.rect = self.image.get_rect()
-        # Virtual position the image at the center of the screen
-        # The position of image/rect used for drawing only
-        self.rect.center = (self.screen.centerx, self.screen.centery)
+        self.rect = self.sprite.rect
+        # Virtual position the image at the center of the screen.
+        # The position of image/rect used for drawing only.
+        self.rect.center = (self.group.screen.centerx, self.group.screen.centery)
+        # Initialize the bounding rect.
+        self.bounding_rect = self.image.get_bounding_rect()
 
-        # Preloading sounds
+        # Preloading sounds.
         self.sound_shot = load_sound(f"{SOUND_DIR}/shot/pistol.wav")
         self.sound_reload = load_sound(f"{SOUND_DIR}/reload/pistol.wav")
 
     @property
     def x(self) -> int:
         """Returns the absolute x coordinate of the player."""
-        return self.camera.x
+        return self.group.camera.x
 
     @property
     def y(self) -> int:
         """Returns the absolute y coordinate of the player."""
-        return self.camera.y
+        return self.group.camera.y
 
     @property
     def virt_pos(self) -> tuple[int, int]:
@@ -113,18 +118,8 @@ class Player(AnimatedSprite):
         return self.rect.centery
 
     @property
-    def bounding_rect(self) -> tuple[int, int]:
-        """Returns the bounding rect of the rotated image and center it."""
-        bounding_rect = self.image.get_bounding_rect()
-        bounding_rect.center = (
-            self.virt_x + bounding_rect.centerx - self.rect.width // 2,
-            self.virt_y + bounding_rect.centery - self.rect.height // 2,
-        )
-        return bounding_rect
-
-    @property
     def angle(self) -> float:
-        """Get the angle of the player based of the cursor position on the screen."""
+        """Get the angle (radian) of the player based of the cursor position on the screen."""
         return (
             math.atan2(
                 self.group.viewpoint.y - self.virt_y,
@@ -191,6 +186,7 @@ class Player(AnimatedSprite):
     def draw_border(
         self, surface: pg.surface.Surface, sprite: pg.sprite.Sprite
     ) -> None:
+        pg.draw.rect(surface, GREEN, self.rect, width=1)
         pg.draw.rect(surface, GREEN, self.bounding_rect, width=1)
 
     def update(self, dt: int, direction: tuple[int, int]) -> None:
@@ -226,13 +222,37 @@ class Player(AnimatedSprite):
 
     def move(self) -> None:
         """Move the player in the specific direction."""
-        dx, dy = self.move_vector
-        self.camera.move((dx, dy))
+        self.group.camera.move(self.move_vector)
+        self.collide()
 
     def rotate(self) -> None:
         """
         Rotate the player object on the center. Need to negate the
         result, if the image starts at the wrong direction.
         """
-        # Rotate image and replace old rect with new rect.
-        self.image, self.rect = self.sprite.rotate(self.virt_x, self.virt_y, self.angle)
+        # Get pre-rotate image from list and replace
+        # old rect/bounding_rect with new one.
+        self.image, self.rect, self.bounding_rect = self.sprite.get_rotated_image(
+            self.angle, self.virt_x, self.virt_y
+        )
+
+    def collide(self):
+        """Check for collision with other tiles."""
+        for tile in self.group.level.tiles_collision_move.sprites():
+            if self.collide_x(tile) and self.collide_y(tile):
+                print("collide:", tile)
+
+    def collide_x(self, tile: Tile) -> bool:
+        """Check collision on x axis."""
+        width = self.bounding_rect.width
+        return (
+            self.x + width // 2 > tile.x and self.x - width // 2 < tile.x + tile.width
+        )
+
+    def collide_y(self, tile: Tile) -> bool:
+        """Check collision on y axis."""
+        height = self.bounding_rect.height
+        return (
+            self.y + height // 2 > tile.y
+            and self.y - height // 2 < tile.y + tile.height
+        )

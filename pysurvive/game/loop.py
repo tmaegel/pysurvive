@@ -26,7 +26,10 @@ class Game:
     def __init__(self) -> None:
         logger.info("Starting...")
         pg.init()
+
         self.clock = pg.time.Clock()
+        self.fps_font = pg.font.SysFont("Arial", 14)
+
         # Sprite that represent the screen.
         # Used to determine whether elements are in the viewing area.
         self.screen = Screen(SCREEN_RECT)
@@ -38,11 +41,9 @@ class Game:
         # Turn off the mouse cursor.
         pg.mouse.set_visible(True)
         # Limit the number of allowed pygame events.
-        # pg.event.set_allowed(
-        #     [QUIT, KEYDOWN, K_ESCAPE, MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION]
-        # )
-
-        self.fps_font = pg.font.SysFont("Arial", 14)
+        pg.event.set_allowed(
+            [QUIT, KEYDOWN, K_ESCAPE, MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION]
+        )
 
         # Absolute (start) position of the player (camera) in game world.
         self.camera = Camera(150, 600)
@@ -80,7 +81,7 @@ class Game:
         # Map
         self.level = Level(f"{MAP_DIR}/map.json")
         # Player
-        self.player_sprites = PlayerGroup()
+        self.player_sprites = PlayerGroup(self.level)
 
     def start(self) -> None:
         """
@@ -94,6 +95,7 @@ class Game:
             # previous two calls to Clock.tick().
             dt = self.clock.get_time()
 
+            # @todo: Get keyboard inputs by player object.
             for event in pg.event.get():
                 if event.type == QUIT:
                     self.running = False
@@ -160,24 +162,6 @@ class Game:
             pg.display.flip()
             # This limits the while loop to a max of FPS times per second.
             self.clock.tick(FPS)
-
-    def get_player_pos(self):
-        return (self.player.x, self.player.y)
-
-    # def get_block_points_on_screen(self):
-    #     _block_points = []
-    #     _offset = self.get_offset()
-    #     _oversized_screen = pg.Rect(
-    #         _offset[0] - self.screen.width,
-    #         _offset[1] - self.screen.height,
-    #         self.screen.width * 3,
-    #         self.screen.height * 3,
-    #     )
-    #     for point in self.unique_block_points:
-    #         if _oversized_screen.collidepoint(point):
-    #             _block_points.append(point)
-    #
-    #     return _block_points
 
     def update_fps(self):
         fps = str(int(self.clock.get_fps()))

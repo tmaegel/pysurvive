@@ -10,6 +10,8 @@ class Tile(pg.sprite.Sprite):
 
     """Single tile object."""
 
+    __slots__ = ("camer", "image", "rect", "x", "y", "enter", "block")
+
     def __init__(
         self,
         tile_image: pg.surface.Surface,
@@ -35,6 +37,9 @@ class Tile(pg.sprite.Sprite):
 
         self._render()
 
+    def __str__(self) -> str:
+        return f"<tile({self.x}, {self.y}, {self.width}, {self.height})"
+
     def __deepcopy__(self, memo):
         """Create a deep copy of this object."""
         return Tile(self.image, self.rect.x, self.rect.y, self.enter, self.block)
@@ -58,6 +63,16 @@ class Tile(pg.sprite.Sprite):
     def rel_y(self, y: int) -> None:
         """Set the rel y coordinate of the tile on the screen."""
         self.rect.y = y
+
+    @property
+    def width(self) -> int:
+        """Returns the width of the tile."""
+        return self.rect.width
+
+    @property
+    def height(self) -> int:
+        """Returns the height of the tile."""
+        return self.rect.height
 
     def _render(self) -> None:
         """Render additional content on the sprite image."""
