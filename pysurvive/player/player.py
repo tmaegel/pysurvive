@@ -186,7 +186,6 @@ class Player(AnimatedSprite):
     def draw_border(
         self, surface: pg.surface.Surface, sprite: pg.sprite.Sprite
     ) -> None:
-        pg.draw.rect(surface, GREEN, self.rect, width=1)
         pg.draw.rect(surface, GREEN, self.bounding_rect, width=1)
 
     def update(self, dt: int, direction: tuple[int, int]) -> None:
@@ -230,9 +229,9 @@ class Player(AnimatedSprite):
         Rotate the player object on the center. Need to negate the
         result, if the image starts at the wrong direction.
         """
-        # Get pre-rotate image from list and replace
-        # old rect/bounding_rect with new one.
-        self.image, self.rect, self.bounding_rect = self.sprite.get_rotated_image(
+        # Rotate the image and get the pre-calculated bounding rect from list
+        # and replace old rect/bounding_rect with new one.
+        self.image, self.rect, self.bounding_rect = self.sprite.rotate(
             self.angle, self.virt_x, self.virt_y
         )
 
