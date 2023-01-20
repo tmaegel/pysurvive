@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 import math
-from functools import cached_property
+import multiprocessing
 
 import pygame as pg
 
@@ -69,14 +69,23 @@ class Player(AnimatedSprite):
         self.group = _group  # Reference to the group with other player object.
         self.weapon_state = WeaponsState.HANDGUN
 
-        # Contains the original (scaled only) images of the player.
+        import time
+
+        st = time.time()
+        spritesheet_paths = []
         for movement in MovementState:
-            # @todo: Loading multiple weapons sprites.
             for weapon in (self.weapon_state,):
-                sprites = Spritesheet(
+                spritesheet_paths.append(
                     f"player/default/{weapon.name.lower()}/{movement.name.lower()}"
                 )
-                self.sprites.append(sprites)
+        with multiprocessing.Pool() as pool:
+            self.sprites = pool.map(Spritesheet, spritesheet_paths)
+        for spritesheet in self.sprites:
+            for image in spritesheet:
+                image.deserialize()
+
+        et = time.time()
+        print(et - st)
 
         # Initialize sprite image.
         self.image = self.sprite.image

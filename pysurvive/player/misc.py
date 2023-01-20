@@ -3,6 +3,7 @@
 import math
 import os
 from enum import Enum, unique
+from typing import Generator
 
 import pygame as pg
 
@@ -36,20 +37,33 @@ class RotatableImage:
 
     __slots__ = (
         "image",
+        "image_buffer",
         "rect",
         "rotated_bounding_rects",
     )
 
     # For example, an accuracy of 10 results in
     # 36 rotated images at 360 degrees.
-    rotation_accuracy = 5
+    rotation_accuracy = 2
 
     def __init__(self, image: pg.surface.Surface) -> None:
         self.image = self._scale(image)
+        self.image_buffer = None
         self.rect = self.image.get_rect()
         self.rotated_bounding_rects: list[pg.rect.Rect] = []
 
-        self._pre_rotate()
+        self._pre_calc_bounding_rects()
+        self.serialize()  # Serialize after pre-processing.
+
+    def serialize(self) -> None:
+        """Serializer for multiprocessing purpose."""
+        self.image_buffer = pg.image.tostring(self.image, "RGBA")
+        del self.image
+
+    def deserialize(self) -> None:
+        """Deserializer for multiprocessing purpose."""
+        self.image = pg.image.frombuffer(self.image_buffer, self.rect.size, "RGBA")
+        del self.image_buffer
 
     def angle_to_radian(self, degree: int) -> float:
         """Angle from degree to radian."""
@@ -83,25 +97,12 @@ class RotatableImage:
 
         return image, rect, bounding_rect
 
-    def _pre_rotate(self) -> None:
+    def _pre_calc_bounding_rects(self) -> None:
         """Pre-rotate the image within a range of angles."""
         for degree in range(0, 360, self.rotation_accuracy):
-            image, _ = self._rotate(degree)
-            # Pre-calculate the bounding rects for performance purpose.
+            # Negative angle amounts will rotate clockwise.
+            image = pg.transform.rotate(self.image, -1 * degree)
             self.rotated_bounding_rects.append(image.get_bounding_rect())
-
-    def _rotate(self, degree: int) -> tuple[pg.surface.Surface, pg.rect.Rect]:
-        """
-        Rotate the surface and rect based on the original one.
-        Keep the image on the same position.
-        """
-        # Negative angle amounts will rotate clockwise.
-        image = pg.transform.rotate(self.image, -1 * degree)
-        rect = image.get_rect()
-        # Put the new rect's center at old center.
-        rect.center = (self.rect.centerx, self.rect.centery)
-
-        return image, rect
 
     @staticmethod
     def _scale(image: pg.surface.Surface, scale: int = 2) -> pg.surface.Surface:
@@ -189,6 +190,13 @@ class Spritesheet:
         self.spritesheet_path = f"{IMAGE_DIR}/{spritesheet_path}"
         self.sprites: list[RotatableImage] = []
         self._load_sprites()
+
+    def __repr__(self) -> str:
+        return f"Spritesheet<{self.spritesheet_path}>"
+
+    def __iter__(self) -> Generator[RotatableImage, None, None]:
+        for sprite in self.sprites:
+            yield sprite
 
     def __len__(self) -> int:
         return len(self.sprites)
