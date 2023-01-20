@@ -106,7 +106,7 @@ class RotatableImage:
 
     @staticmethod
     def _scale(image: pg.surface.Surface, scale: int = 2) -> pg.surface.Surface:
-        """scaling image down."""
+        """Scaling image down."""
         # pg.transform.scale
         return pg.transform.smoothscale(
             image,

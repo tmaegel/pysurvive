@@ -69,9 +69,6 @@ class Player(AnimatedSprite):
         self.group = _group  # Reference to the group with other player object.
         self.weapon_state = WeaponsState.HANDGUN
 
-        import time
-
-        st = time.time()
         spritesheet_paths = []
         for movement in MovementState:
             for weapon in (self.weapon_state,):
@@ -83,9 +80,6 @@ class Player(AnimatedSprite):
         for spritesheet in self.sprites:
             for image in spritesheet:
                 image.deserialize()
-
-        et = time.time()
-        print(et - st)
 
         # Initialize sprite image.
         self.image = self.sprite.image
