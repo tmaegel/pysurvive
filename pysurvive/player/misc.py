@@ -3,7 +3,7 @@
 import math
 import os
 from enum import Enum, unique
-from typing import Generator
+from typing import Generator, Union
 
 import pygame as pg
 
@@ -15,12 +15,26 @@ logger = Logger()
 
 
 @unique
-class MovementState(Enum):
+class DefaultState(Enum):
+    IDLE = 0
+
+
+@unique
+class UpperBodyState(Enum):
     IDLE = 0
     MOVE = 1
     # MELEEATTACK = 2
     # SHOOT = 3
     # RELOAD = 4
+
+
+@unique
+class LowerBodyState(Enum):
+    IDLE = 0
+    WALK = 1
+    WALK_LEFT = 2
+    WALK_RIGHT = 3
+    RUN = 4
 
 
 @unique
@@ -44,7 +58,7 @@ class RotatableImage:
 
     # For example, an accuracy of 10 results in
     # 36 rotated images at 360 degrees.
-    rotation_accuracy = 2
+    rotation_accuracy = 5
 
     def __init__(self, image: pg.surface.Surface) -> None:
         self.image = self._scale(image)
@@ -133,8 +147,7 @@ class AnimatedSprite(pg.sprite.Sprite):
         self._period = 1500.0 / FPS
         self.speed = 7
         self.direction = (0, 0)
-        self.movement_state = MovementState.IDLE
-        self.old_movement_state = self.movement_state
+        self.movement_state = DefaultState.IDLE
 
     @property
     def sprite(self) -> RotatableImage:
@@ -161,7 +174,33 @@ class AnimatedSprite(pg.sprite.Sprite):
             -1 * self.direction[1] * self.speed,
         )
 
-    def _switch_movement(self, movement_state: MovementState) -> None:
+    def update(self, dt: int, direction: tuple[int, int]) -> None:
+        """Update the player object."""
+        # Update player values
+        self.direction = direction
+        # Accumulate time since last update.
+        self._next_update += dt
+        # If more time has passed as a period, then we need to update.
+        if self._next_update >= self._period:
+            # Skipping frames if too much time has passed.
+            # Since _next_update is bigger than period this is at least 1.
+            self.frame += int(self._next_update / self._period)
+            # Time that already has passed since last update.
+            self._next_update %= self._period
+            # Limit the frame to the length of the image list.
+            self.frame %= len(self.sprites[self.movement_state.value])
+            # Handle the different images for animation here
+            self.animate()
+
+    def animate(self) -> None:
+        pass
+
+    def _switch_movement(
+        self,
+        movement_state: Union[
+            DefaultState, UpperBodyState, LowerBodyState, WeaponsState
+        ],
+    ) -> None:
         self.old_movement_state = self.movement_state  # Save old state
         self.movement_state = movement_state
         # Reset frame if movement_state differ.

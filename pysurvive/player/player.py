@@ -5,14 +5,15 @@ import multiprocessing
 
 import pygame as pg
 
-from pysurvive.config import DEBUG_SPRITE, GREEN, SOUND_DIR
+from pysurvive.config import DEBUG_SPRITE, GREEN
 from pysurvive.game.core import Camera, Screen
 from pysurvive.map.level import Level
 from pysurvive.map.tile import Tile
 from pysurvive.player.misc import (
     AnimatedSprite,
-    MovementState,
+    LowerBodyState,
     Spritesheet,
+    UpperBodyState,
     WeaponsState,
 )
 from pysurvive.player.viewpoint import Viewpoint
@@ -30,10 +31,12 @@ class PlayerGroup(pg.sprite.RenderPlain):
         self.camera = Camera()
         self.viewpoint = Viewpoint()
         self.player = Player(self)
+        self.feets = PlayerFeets(self)
         self.add(
             (
                 self.viewpoint,
                 self.player,
+                self.feets,
             )
         )
 
@@ -60,40 +63,13 @@ class PlayerGroup(pg.sprite.RenderPlain):
         return dirty
 
 
-class Player(AnimatedSprite):
+class PlayerCore(AnimatedSprite):
 
-    """Player object/sprite."""
+    """Player core class."""
 
     def __init__(self, _group) -> None:
         super().__init__()
         self.group = _group  # Reference to the group with other player object.
-        self.weapon_state = WeaponsState.HANDGUN
-
-        spritesheet_paths = []
-        for movement in MovementState:
-            for weapon in (self.weapon_state,):
-                spritesheet_paths.append(
-                    f"player/default/{weapon.name.lower()}/{movement.name.lower()}"
-                )
-        with multiprocessing.Pool() as pool:
-            self.sprites = pool.map(Spritesheet, spritesheet_paths)
-        for spritesheet in self.sprites:
-            for image in spritesheet:
-                image.deserialize()
-
-        # Initialize sprite image.
-        self.image = self.sprite.image
-        # Rect acts as the virtual position (center of the screen).
-        self.rect = self.sprite.rect
-        # Virtual position the image at the center of the screen.
-        # The position of image/rect used for drawing only.
-        self.rect.center = (self.group.screen.centerx, self.group.screen.centery)
-        # Initialize the bounding rect.
-        self.bounding_rect = self.image.get_bounding_rect()
-
-        # Preloading sounds.
-        self.sound_shot = load_sound(f"{SOUND_DIR}/shot/pistol.wav")
-        self.sound_reload = load_sound(f"{SOUND_DIR}/reload/pistol.wav")
 
     @property
     def x(self) -> int:
@@ -130,6 +106,43 @@ class Player(AnimatedSprite):
             )
             + 2 * math.pi
         ) % (2 * math.pi)
+
+    def draw_border(
+        self, surface: pg.surface.Surface, sprite: pg.sprite.Sprite
+    ) -> None:
+        pg.draw.rect(surface, GREEN, self.bounding_rect, width=1)
+
+
+class Player(PlayerCore):
+
+    """Player object/sprite."""
+
+    def __init__(self, _group) -> None:
+        super().__init__(_group)
+        self.movement_state = UpperBodyState.IDLE
+        self.weapon_state = WeaponsState.HANDGUN
+
+        spritesheet_paths = []
+        for movement in UpperBodyState:
+            for weapon in (self.weapon_state,):
+                spritesheet_paths.append(
+                    f"player/default/weapons/{weapon.name.lower()}/{movement.name.lower()}"
+                )
+        with multiprocessing.Pool() as pool:
+            self.sprites = pool.map(Spritesheet, spritesheet_paths)
+        for spritesheet in self.sprites:
+            for image in spritesheet:
+                image.deserialize()
+
+        # Initialize sprite image.
+        self.image = self.sprite.image
+        # Rect acts as the virtual position (center of the screen).
+        self.rect = self.sprite.rect
+        # Virtual position the image at the center of the screen.
+        # The position of image/rect used for drawing only.
+        self.rect.center = (self.group.screen.centerx, self.group.screen.centery)
+        # Initialize the bounding rect.
+        self.bounding_rect = self.image.get_bounding_rect()
 
     @property
     def weapon_angle(self) -> float:
@@ -186,52 +199,27 @@ class Player(AnimatedSprite):
             + math.sin(angle) * offset2
         )
 
-    def draw_border(
-        self, surface: pg.surface.Surface, sprite: pg.sprite.Sprite
-    ) -> None:
-        pg.draw.rect(surface, GREEN, self.bounding_rect, width=1)
-
     def update(self, dt: int, direction: tuple[int, int]) -> None:
-        """Update the player object."""
-        # Update player values
-        self.direction = direction
-        # Accumulate time since last update.
-        self._next_update += dt
-        # If more time has passed as a period, then we need to update.
-        if self._next_update >= self._period:
-            # Skipping frames if too much time has passed.
-            # Since _next_update is bigger than period this is at least 1.
-            self.frame += int(self._next_update / self._period)
-            # Time that already has passed since last update.
-            self._next_update %= self._period
-            # Limit the frame to the length of the image list.
-            self.frame %= len(self.sprites[self.movement_state.value])
-            # Handle the different images for animation here
-            self.animate()
-
-        self.move()
+        """Update the player upper body."""
+        super().update(dt, direction)
+        self.group.camera.move(self.move_vector)
+        self.collide()
         self.rotate()
 
     def animate(self) -> None:
         # If not attacking.
-        if self.movement_state in (MovementState.IDLE, MovementState.MOVE):
-            if self.direction[0] != 0 or self.direction[1] != 0:
-                # Move state
-                self._switch_movement(MovementState.MOVE)
-            elif self.direction[0] == 0 and self.direction[1] == 0:
+        if self.movement_state in (UpperBodyState.IDLE, UpperBodyState.MOVE):
+            if self.direction[0] == 0 and self.direction[1] == 0:
                 # Idle state
-                self._switch_movement(MovementState.IDLE)
-
-    def move(self) -> None:
-        """Move the player in the specific direction."""
-        self.group.camera.move(self.move_vector)
-        self.collide()
+                self._switch_movement(UpperBodyState.IDLE)
+            elif self.direction[0] != 0 or self.direction[1] != 0:
+                # Move state
+                self._switch_movement(UpperBodyState.MOVE)
+        else:
+            pass
 
     def rotate(self) -> None:
-        """
-        Rotate the player object on the center. Need to negate the
-        result, if the image starts at the wrong direction.
-        """
+        """Rotate the player upper body sprite on the center."""
         # Rotate the image and get the pre-calculated bounding rect from list
         # and replace old rect/bounding_rect with new one.
         self.image, self.rect, self.bounding_rect = self.sprite.rotate(
@@ -257,4 +245,53 @@ class Player(AnimatedSprite):
         return (
             self.y + height // 2 > tile.y
             and self.y - height // 2 < tile.y + tile.height
+        )
+
+
+class PlayerFeets(PlayerCore):
+
+    """Player lower body / feets object/sprite."""
+
+    def __init__(self, _group) -> None:
+        super().__init__(_group)
+        self.movement_state = LowerBodyState.IDLE
+
+        spritesheet_paths = []
+        for movement in LowerBodyState:
+            spritesheet_paths.append(f"player/default/feets/{movement.name.lower()}")
+        with multiprocessing.Pool() as pool:
+            self.sprites = pool.map(Spritesheet, spritesheet_paths)
+        for spritesheet in self.sprites:
+            for image in spritesheet:
+                image.deserialize()
+
+        # Initialize sprite image.
+        self.image = self.sprite.image
+        # Rect acts as the virtual position (center of the screen).
+        self.rect = self.sprite.rect
+        # Virtual position the image at the center of the screen.
+        # The position of image/rect used for drawing only.
+        self.rect.center = (self.group.screen.centerx, self.group.screen.centery)
+        # Initialize the bounding rect.
+        self.bounding_rect = self.image.get_bounding_rect()
+
+    def update(self, dt: int, direction: tuple[int, int]) -> None:
+        """Update the player lower body / feets."""
+        super().update(dt, direction)
+        self.rotate()
+
+    def animate(self) -> None:
+        if self.direction[0] == 0 and self.direction[1] == 0:
+            # Idle state
+            self._switch_movement(LowerBodyState.IDLE)
+        elif self.direction[0] != 0 or self.direction[1] != 0:
+            # Walk state
+            self._switch_movement(LowerBodyState.WALK)
+
+    def rotate(self) -> None:
+        """Rotate the player lower body / feets sprite on the center."""
+        # Rotate the image and get the pre-calculated bounding rect from list
+        # and replace old rect/bounding_rect with new one.
+        self.image, self.rect, self.bounding_rect = self.sprite.rotate(
+            self.angle, self.virt_x, self.virt_y
         )
