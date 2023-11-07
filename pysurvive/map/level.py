@@ -11,14 +11,10 @@ import pytiled_parser as pytiled
 
 from pysurvive.game.core import Screen
 from pysurvive.logger import Logger
+from pysurvive.map.tile import TileGroup
 from pysurvive.map.tileset import Tileset
 
 logger = Logger()
-
-
-class TileGroup(pg.sprite.RenderPlain):
-    def __init__(self):
-        super().__init__()
 
 
 class Level:
@@ -64,16 +60,6 @@ class Level:
 
         self._initialize()
 
-    @property
-    def map_width(self) -> float:
-        """Returns the map width (tile x * tile size)."""
-        return self.map_config.map_size.width * self.map_config.tile_size.width
-
-    @property
-    def map_height(self) -> float:
-        """Returns the map height (tile y * tile size)."""
-        return self.map_config.map_size.height * self.map_config.tile_size.height
-
     def _initialize(self) -> None:
         """Initialize each layer of the tile map."""
         for layer in self.map_config.layers:
@@ -116,6 +102,16 @@ class Level:
                 return tileset
 
         return None
+
+    @property
+    def map_width(self) -> float:
+        """Returns the map width (tile x * tile size)."""
+        return self.map_config.map_size.width * self.map_config.tile_size.width
+
+    @property
+    def map_height(self) -> float:
+        """Returns the map height (tile y * tile size)."""
+        return self.map_config.map_size.height * self.map_config.tile_size.height
 
     def update(self, *args, **kwargs):
         """

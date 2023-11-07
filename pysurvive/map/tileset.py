@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
-from typing import Any, Union
+from typing import Any
 
 import pytiled_parser as pytiled
 
@@ -26,6 +26,35 @@ class Tileset:
             f" tile_size={self.tile_width}x{self.tile_height},"
             f" ids=[{self.first_gid} .. {self.last_gid}]"
         )
+
+    def _load(self) -> list[Tile]:
+        """
+        Load a tileset from single file and split it into a tile_table.
+        The tileset consists of several tiles arranged in a row.
+        """
+        logger.info("Loading tileset from file %s.", self.tileset_file)
+        tileset_image, _ = load_image(self.tileset_file, alpha=True)
+        tileset_width, _ = tileset_image.get_size()
+        tile_table: list[Tile] = []
+        for tile_x in range(0, tileset_width // self.tile_width):
+            rect = (
+                tile_x * self.tile_width,
+                0,
+                self.tile_width,
+                self.tile_height,
+            )
+            # Subsurface doesn’t create copies in memory.
+            tile_image = tileset_image.subsurface(rect)
+
+            tile = Tile(
+                image=tile_image,
+                bounding_rect=tile_image.get_bounding_rect(),
+                enter=self.get_property("enter"),
+                block=self.get_property("block"),
+            )
+            tile_table.append(tile)
+
+        return tile_table
 
     @property
     def name(self) -> str:
@@ -90,30 +119,3 @@ class Tileset:
     def get_tile(self, tile_id: int) -> Tile:
         """Returns the tile object by id."""
         return self.tile_table[tile_id - self.first_gid]
-
-    def _load(self) -> list[Tile]:
-        """
-        Load a tileset from single file and split it into a tile_table.
-        The tileset consists of several tiles arranged in a row.
-        """
-        logger.info("Loading tileset from file %s.", self.tileset_file)
-        tileset_image, _ = load_image(self.tileset_file, alpha=True)
-        tileset_width, _ = tileset_image.get_size()
-        tile_table: list[Tile] = []
-        for tile_x in range(0, tileset_width // self.tile_width):
-            rect = (
-                tile_x * self.tile_width,
-                0,
-                self.tile_width,
-                self.tile_height,
-            )
-            # Subsurface doesn’t create copies in memory.
-            tile_image = tileset_image.subsurface(rect)
-            tile = Tile(
-                tile_image,
-                enter=self.get_property("enter"),
-                block=self.get_property("block"),
-            )
-            tile_table.append(tile)
-
-        return tile_table

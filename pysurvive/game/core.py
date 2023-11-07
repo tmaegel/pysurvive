@@ -6,7 +6,6 @@ from pysurvive.config import SCREEN_RECT
 
 
 class Singleton(type):
-
     _instances = {}
 
     def __call__(cls, *args, **kwargs):
@@ -85,10 +84,8 @@ class Camera(metaclass=Singleton):
         self.y = round(self.y - delta[1])
 
     def get_rel_position(self, x: int, y: int) -> tuple[int, int]:
-        """
-        Returns the relative position of a coordinate in relation
-        to the global camera position in the center of the screen.
-        """
+        """Returns the relative position of a coordinate in relation
+        to the global camera position (center of the screen)."""
         return (
             round(x - self.x + self.screen.centerx),
             round(y - self.y + self.screen.centery),
