@@ -1,0 +1,9 @@
+-r requirements.txt
+coverage
+flake8
+isort
+mypy
+mypy-extensions
+pylint
+pytest
+tox
