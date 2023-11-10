@@ -80,8 +80,63 @@ class PlayerFeets(AnimatedSprite):
         if self.direction.x == 0 and self.direction.y == 0:
             # Idle state
             self._switch_movement(LowerBodyState.IDLE)
+        elif self.direction.x != 0 and self.direction.y != 0:
+            # Walk state (on diagonal axis)
+            degree = abs(RotatableImage.angle_to_degree(angle))
+            if degree >= 0 and degree < 90:
+                if (
+                    self.direction.x > 0
+                    and self.direction.y > 0
+                    or self.direction.x < 0
+                    and self.direction.y < 0
+                ):
+                    self._switch_movement(LowerBodyState.WALK)
+                else:
+                    if self.direction.y < 0:
+                        self._switch_movement(LowerBodyState.WALK_LEFT)
+                    else:
+                        self._switch_movement(LowerBodyState.WALK_RIGHT)
+            elif degree >= 90 and degree < 180:
+                if (
+                    self.direction.x < 0
+                    and self.direction.y > 0
+                    or self.direction.x > 0
+                    and self.direction.y < 0
+                ):
+                    self._switch_movement(LowerBodyState.WALK)
+                else:
+                    if self.direction.y < 0:
+                        self._switch_movement(LowerBodyState.WALK_RIGHT)
+                    else:
+                        self._switch_movement(LowerBodyState.WALK_LEFT)
+            elif degree >= 180 and degree < 270:
+                if (
+                    self.direction.x < 0
+                    and self.direction.y < 0
+                    or self.direction.x > 0
+                    and self.direction.y > 0
+                ):
+                    self._switch_movement(LowerBodyState.WALK)
+                else:
+                    if self.direction.y < 0:
+                        self._switch_movement(LowerBodyState.WALK_RIGHT)
+                    else:
+                        self._switch_movement(LowerBodyState.WALK_LEFT)
+            elif degree >= 270 and degree < 360:
+                if (
+                    self.direction.x > 0
+                    and self.direction.y < 0
+                    or self.direction.x < 0
+                    and self.direction.y > 0
+                ):
+                    self._switch_movement(LowerBodyState.WALK)
+                else:
+                    if self.direction.y < 0:
+                        self._switch_movement(LowerBodyState.WALK_LEFT)
+                    else:
+                        self._switch_movement(LowerBodyState.WALK_RIGHT)
         elif self.direction.x != 0 or self.direction.y != 0:
-            # Walk state
+            # Walk state (on axis)
             degree = abs(RotatableImage.angle_to_degree(angle))
             if degree > 315 and degree <= 360 or degree >= 0 and degree <= 45:
                 if self.direction.y == 0:
