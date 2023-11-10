@@ -40,7 +40,7 @@ class Game:
         pg.display.set_caption("pysurvive")
         pg.transform.set_smoothscale_backend("SSE")
         # Turn off the mouse cursor.
-        pg.mouse.set_visible(True)
+        pg.mouse.set_visible(False)
         # Limit the number of allowed pygame events.
         pg.event.set_allowed(
             [QUIT, KEYDOWN, K_ESCAPE, MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION]

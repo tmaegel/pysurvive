@@ -179,8 +179,16 @@ class Player(AnimatedSprite):
         self.animate()
 
     def move(self, dt: float, group: pg.sprite.Group) -> None:
+        speedx = self.speed
+        speedy = self.speed
+        # If the object moves diagonal add only the half of the speed
+        # in each direction.
+        if self.direction.x != 0 and self.direction.y != 0:
+            speedx = abs(math.cos(math.pi / 4)) * self.speed
+            speedy = abs(math.sin(math.pi / 4)) * self.speed
+
         x_orig = self.x
-        for dx in range(1, round(self.speed * dt) + 1):
+        for dx in range(1, round(speedx * dt) + 1):
             x_prev = self.x
             self.x = x_orig + dx * self.direction.x
             if bool(pg.sprite.spritecollide(self, group, False, self.is_collided)):
@@ -188,7 +196,7 @@ class Player(AnimatedSprite):
                 break
 
         y_orig = self.y
-        for dy in range(1, round(self.speed * dt) + 1):
+        for dy in range(1, round(speedy * dt) + 1):
             y_prev = self.y
             self.y = y_orig + dy * self.direction.y
             if bool(pg.sprite.spritecollide(self, group, False, self.is_collided)):
