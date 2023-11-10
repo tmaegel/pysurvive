@@ -1,92 +1,74 @@
 #!/usr/bin/env python
 # coding=utf-8
+
 import pygame as pg
 
-from pysurvive.config import SCREEN_RECT
+from pysurvive.config import DEBUG_SPRITE, RED
 
 
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-
-        return cls._instances[cls]
+class CameraBoxBorder:
+    left: int = 300
+    right: int = 300
+    top: int = 300
+    bottom: int = 300
 
 
-class Screen(pg.rect.Rect, metaclass=Singleton):
+class Camera(pg.sprite.Group):
+    def __init__(self) -> None:
+        super().__init__()
+        self.display_surface = pg.display.get_surface()
+        self.width = self.display_surface.get_size()[0]
+        self.height = self.display_surface.get_size()[1]
+        self.screenx = self.width // 2
+        self.screeny = self.height // 2
+        self.offset = pg.math.Vector2()
 
-    """
-    Class that represent the screen and is used to detect
-    wheather objects are visible on the screen.
-    """
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        # Calculate a slightly larger rectangle of the screen.
-        # Otherwise, there will be white flickering at the edges
-        # when drawing the sprites on the screen.
-        rough_w = self.width * 0.01
-        rough_h = self.height * 0.01
-        self.rect_rough = pg.Rect(
-            self.x - rough_w,
-            self.y - rough_w,
-            self.width + rough_w * 2,
-            self.height + rough_h * 2,
+        self.camera_box = pg.Rect(
+            CameraBoxBorder.left,
+            CameraBoxBorder.top,
+            self.width - (CameraBoxBorder.left + CameraBoxBorder.right),
+            self.height - (CameraBoxBorder.top + CameraBoxBorder.bottom),
         )
 
-    def __str__(self) -> str:
-        return f"Screen (size={self.width}x{self.height})"
-
-    @classmethod
-    def delete(cls) -> None:
-        """Unset singleton."""
-        cls._instances = {}
+    def __repr__(self) -> str:
+        return f"Camera(x={self.x} x {self.x})"
 
     @property
-    def rect(self) -> pg.rect.Rect:
-        """
-        The function spritecollide expects a property rect.
-        Returns the rough rect of the screen here.
-        """
-        return self.rect_rough
-
-
-class Camera(metaclass=Singleton):
-
-    """
-    Class that represents the absolute position of the
-    camera (player) in the game world.
-    """
-
-    def __init__(self, x: int = 0, y: int = 0) -> None:
-        self.screen = Screen(SCREEN_RECT)
-        self.x = x
-        self.y = y
-
-    def __str__(self) -> str:
-        return f"Camera (x={self.x}, y={self.y})"
-
-    @classmethod
-    def delete(cls) -> None:
-        """Unset singleton."""
-        cls._instances = {}
+    def x(self) -> float:
+        return self.offset.x
 
     @property
-    def position(self) -> tuple[int, int]:
-        """Returns camera position in a tuple."""
-        return (self.x, self.y)
+    def y(self) -> float:
+        return self.offset.y
 
-    def move(self, delta: tuple[int, int]) -> None:
-        """Move the camera by delta x, y."""
-        self.x = round(self.x - delta[0])
-        self.y = round(self.y - delta[1])
+    @x.setter
+    def x(self, _x: float) -> None:
+        self.offset.x = _x
 
-    def get_rel_position(self, x: int, y: int) -> tuple[int, int]:
-        """Returns the relative position of a coordinate in relation
-        to the global camera position (center of the screen)."""
-        return (
-            round(x - self.x + self.screen.centerx),
-            round(y - self.y + self.screen.centery),
+    @y.setter
+    def y(self, _y: float) -> None:
+        self.offset.y = _y
+
+    @property
+    def rect(self) -> pg.FRect:
+        """Returns the camera / screen rect."""
+        return pg.FRect(self.x, self.y, self.width, self.height)
+
+    @property
+    def near_area_rect(self) -> pg.FRect:
+        return pg.FRect(
+            self.x + self.screenx - 75, self.y + self.screeny - 75, 150, 150
         )
+
+    def update(self, target) -> None:
+        if target.x < self.camera_box.left:
+            self.camera_box.left = target.x
+        if target.x > self.camera_box.right:
+            self.camera_box.right = target.x
+        if target.y < self.camera_box.top:
+            self.camera_box.top = target.y
+        if target.y > self.camera_box.bottom:
+            self.camera_box.bottom = target.y
+
+        self.x = self.camera_box.left - CameraBoxBorder.left
+        self.y = self.camera_box.top - CameraBoxBorder.top

@@ -9,9 +9,9 @@ from typing import Optional
 import pygame as pg
 import pytiled_parser as pytiled
 
-from pysurvive.game.core import Screen
+from pysurvive.game.core import Camera
 from pysurvive.logger import Logger
-from pysurvive.map.tile import TileGroup
+from pysurvive.map.tile import TileGroupManager
 from pysurvive.map.tileset import Tileset
 
 logger = Logger()
@@ -30,8 +30,6 @@ class Level:
     """
 
     def __init__(self, _map_file: str) -> None:
-        self.screen = Screen()
-
         logger.info("Loading map from file %s.", _map_file)
         if not file_exists(_map_file):
             logger.error("Map file %s does not exists.", _map_file)
@@ -42,21 +40,11 @@ class Level:
         self.map_config = pytiled.parse_map(self.map_file)
 
         # Load tilesets.
+        self.tiles = TileGroupManager()
         self.tilesets = {}
         for ts_id, ts_config in self.map_config.tilesets.items():
             tileset = Tileset(ts_config)
             self.tilesets[ts_id] = tileset
-
-        # The whole list of tiles in one group.
-        self.tiles_all = TileGroup()
-        # Tiles that should draw on the screen.
-        self.tiles_screen = TileGroup()
-        # Includes only objects which cannot be entered.
-        self.tiles_collision_move = TileGroup()
-        # Includes only objects which do not block (e.g. shooting)
-        self.tiles_collision_bullet = TileGroup()
-        # @todo
-        # self.close_to_player = TileGroup()
 
         self._initialize()
 
@@ -78,12 +66,7 @@ class Level:
                         tile = copy.deepcopy(tileset.get_tile(tile_id))
                         tile.x = x * self.map_config.tile_size.width
                         tile.y = y * self.map_config.tile_size.height
-                        # Add a copy of tile from tileset.
-                        self.tiles_all.add((tile,))
-                        if not tile.enter:
-                            self.tiles_collision_move.add((tile,))
-                        if tile.block:
-                            self.tiles_collision_bullet.add((tile,))
+                        self.tiles.add(tile)  # Add a copy of tile from tileset.
                     except IndexError:
                         logger.error(
                             "Error while accessing tile (%s) of tileset %r.",
@@ -113,22 +96,10 @@ class Level:
         """Returns the map height (tile y * tile size)."""
         return self.map_config.map_size.height * self.map_config.tile_size.height
 
-    def update(self, *args, **kwargs):
-        """
-        Call the update method of every tile object.
-        Check which tile is one the screen.
-        """
-        self.tiles_screen.empty()
-        self.tiles_screen.add(
-            pg.sprite.spritecollide(self.screen, self.tiles_all, False)
-        )
-        # Update all tiles on the screen.
-        self.tiles_all.update(*args, **kwargs)
+    def update(self, camera: Camera):
+        """Call the update method of tile group manager."""
+        self.tiles.update(camera)
 
-    def draw(self, surface: pg.surface.Surface) -> None:
-        """
-        Draw all sprites (tiles) onto the surface
-        Group.draw(surface): return Rect_list
-        Draws all of the member sprites onto the given surface.
-        """
-        self.tiles_screen.draw(surface)
+    def draw(self, surface: pg.surface.Surface, camera: Camera) -> None:
+        """Call the draw method of tile group manager."""
+        self.tiles.draw(surface, camera)

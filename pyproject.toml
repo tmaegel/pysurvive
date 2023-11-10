@@ -78,7 +78,7 @@ disallow_any_explicit = false
 # explicit type parameters.
 disallow_any_generics = true
 # Disallows subclassing a value of type Any.
-disallow_subclassing_any = true
+disallow_subclassing_any = false
 
 # Untyped definitions and calls
 # Disallows calling functions without type annotations

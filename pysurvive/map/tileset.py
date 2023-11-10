@@ -48,7 +48,6 @@ class Tileset:
 
             tile = Tile(
                 image=tile_image,
-                bounding_rect=tile_image.get_bounding_rect(),
                 enter=self.get_property("enter"),
                 block=self.get_property("block"),
             )

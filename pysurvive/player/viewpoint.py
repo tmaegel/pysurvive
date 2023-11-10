@@ -7,8 +7,8 @@ class Viewpoint(pg.sprite.Sprite):
 
     """Represents the signs / mouse cursor of the player."""
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self.color = RED
         self.size = 10
         self.image = pg.Surface((self.size, self.size))
@@ -52,12 +52,7 @@ class Viewpoint(pg.sprite.Sprite):
             (self.size, 0),
         )
 
-    def update(self, dt: int = None, direction: tuple[int, int] = None) -> None:
+    def update(self) -> None:
         """Update the player viewpoint cursor positon."""
         self.rect.centerx = self.x
         self.rect.centery = self.y
-
-    def draw_border(
-        self, surface: pg.surface.Surface, sprite: pg.sprite.Sprite
-    ) -> None:
-        pass

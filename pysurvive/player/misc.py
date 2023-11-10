@@ -53,20 +53,12 @@ class RotatableImage:
         "image",
         "image_buffer",
         "rect",
-        "rotated_bounding_rects",
     )
-
-    # For example, an accuracy of 10 results in
-    # 36 rotated images at 360 degrees.
-    rotation_accuracy = 5
 
     def __init__(self, image: pg.surface.Surface) -> None:
         self.image = self._scale(image)
         self.image_buffer = None
         self.rect = self.image.get_rect()
-        self.rotated_bounding_rects: list[pg.rect.Rect] = []
-
-        self._pre_calc_bounding_rects()
         self.serialize()  # Serialize after pre-processing.
 
     def serialize(self) -> None:
@@ -79,44 +71,22 @@ class RotatableImage:
         self.image = pg.image.frombuffer(self.image_buffer, self.rect.size, "RGBA")
         del self.image_buffer
 
-    def angle_to_radian(self, degree: int) -> float:
+    def rotate(self, radian: float) -> pg.surface.Surface:
+        """Rotate the surface based on the original one."""
+        degree = RotatableImage.angle_to_degree(radian)
+        image = pg.transform.rotate(self.image, degree)
+
+        return image
+
+    @staticmethod
+    def angle_to_radian(degree: int) -> float:
         """Angle from degree to radian."""
         return -1 * degree * math.pi / 180
 
-    def angle_to_degree(self, radian: float) -> int:
+    @staticmethod
+    def angle_to_degree(radian: float) -> int:
         """Angle from radian to degree."""
         return int(-1 * radian * 180 / math.pi)
-
-    def rotate(
-        self, radian: float, x: int, y: int
-    ) -> tuple[pg.surface.Surface, pg.rect.Rect, pg.rect.Rect]:
-        """
-        Rotate the surface and rect based on the original one.
-        Keep the image on the same position.
-        """
-        degree = self.angle_to_degree(radian)
-        image = pg.transform.rotate(self.image, degree)
-        rect = image.get_rect()
-        # Put the new rect's center at old center.
-        rect.center = (x, y)
-
-        # Get the pre-calculated bounding rect and center it.
-        bounding_rect = self.rotated_bounding_rects[
-            abs(degree) // self.rotation_accuracy
-        ].copy()
-        bounding_rect.center = (
-            x + bounding_rect.centerx - rect.width // 2,
-            y + bounding_rect.centery - rect.height // 2,
-        )
-
-        return image, rect, bounding_rect
-
-    def _pre_calc_bounding_rects(self) -> None:
-        """Pre-rotate the image within a range of angles."""
-        for degree in range(0, 360, self.rotation_accuracy):
-            # Negative angle amounts will rotate clockwise.
-            image = pg.transform.rotate(self.image, -1 * degree)
-            self.rotated_bounding_rects.append(image.get_bounding_rect())
 
     @staticmethod
     def _scale(image: pg.surface.Surface, scale: int = 2) -> pg.surface.Surface:
@@ -144,40 +114,32 @@ class AnimatedSprite(pg.sprite.Sprite):
         # Next time it has to be updated in ms.
         self._next_update = 0
         # Frequency/period of the animation in ms.
-        self._period = 1500.0 / FPS
-        self.speed = 7
-        self.direction = (0, 0)
+        self._period = 1.5 / FPS
+
         self.movement_state = DefaultState.IDLE
+        self.direction = pg.math.Vector2()
+        self.speed = 200
+
+    def _switch_movement(
+        self,
+        movement_state: Union[
+            DefaultState, UpperBodyState, LowerBodyState, WeaponsState
+        ],
+    ) -> None:
+        self.old_movement_state = self.movement_state  # Save old state
+        self.movement_state = movement_state
+        # Reset frame if movement_state differ.
+        if self.old_movement_state != self.movement_state:
+            self.frame = 0
 
     @property
     def sprite(self) -> RotatableImage:
-        """
-        Returns the active image object (RotatableImage)
-        of the spritesheet (movement).
-        """
+        """Returns the active image object (RotatableImage)
+        of the spritesheet (movement)."""
         return self.sprites[self.movement_state.value][self.frame]
 
-    @property
-    def move_vector(self) -> tuple[float, float]:
-        """
-        If the object moves diagonal add only the half of the speed
-        in each direction.
-        """
-        if self.direction[0] != 0 and self.direction[1] != 0:
-            # Based on the 45° angle
-            return (
-                -1 * self.direction[0] * abs(math.cos(math.pi / 4)) * self.speed,
-                -1 * self.direction[1] * abs(math.sin(math.pi / 4)) * self.speed,
-            )
-        return (
-            -1 * self.direction[0] * self.speed,
-            -1 * self.direction[1] * self.speed,
-        )
-
-    def update(self, dt: int, direction: tuple[int, int]) -> None:
+    def update(self, dt: float) -> None:
         """Update the player object."""
-        # Update player values
-        self.direction = direction
         # Accumulate time since last update.
         self._next_update += dt
         # If more time has passed as a period, then we need to update.
@@ -194,18 +156,6 @@ class AnimatedSprite(pg.sprite.Sprite):
 
     def animate(self) -> None:
         pass
-
-    def _switch_movement(
-        self,
-        movement_state: Union[
-            DefaultState, UpperBodyState, LowerBodyState, WeaponsState
-        ],
-    ) -> None:
-        self.old_movement_state = self.movement_state  # Save old state
-        self.movement_state = movement_state
-        # Reset frame if movement_state differ.
-        if self.old_movement_state != self.movement_state:
-            self.frame = 0
 
 
 class Spritesheet:

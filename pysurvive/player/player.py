@@ -2,123 +2,66 @@
 # coding=utf-8
 import math
 import multiprocessing
+from typing import Optional
 
 import pygame as pg
 
-from pysurvive.config import DEBUG_SPRITE, GREEN
-from pysurvive.game.core import Camera, Screen
+from pysurvive.config import DEBUG_SPRITE, RED
+from pysurvive.game.core import Camera
 from pysurvive.map.level import Level
-from pysurvive.map.tile import Tile
+from pysurvive.player.feets import PlayerFeets
 from pysurvive.player.misc import (
     AnimatedSprite,
-    LowerBodyState,
     Spritesheet,
     UpperBodyState,
     WeaponsState,
 )
 from pysurvive.player.viewpoint import Viewpoint
-from pysurvive.utils import load_sound
 
 
-class PlayerGroup(pg.sprite.RenderPlain):
+class PlayerGroup(pg.sprite.Group):
 
     """Sprite group that contains all drawable player sprites."""
 
-    def __init__(self, _level: Level) -> None:
+    def __init__(self, camera: Camera, viewpoint: Viewpoint) -> None:
         super().__init__()
-        self.level = _level  # Reference to the level object.
-        self.screen = Screen()
-        self.camera = Camera()
-        self.viewpoint = Viewpoint()
-        self.player = Player(self)
-        self.feets = PlayerFeets(self)
-        self.add(
-            (
-                self.viewpoint,
-                self.player,
-                self.feets,
-            )
-        )
+        self.feets = PlayerFeets()
+        self.player = Player(camera, viewpoint, self.feets, x=500, y=600)
+        self.add((self.player, self.feets))
 
-    def draw(self, surface: pg.surface.Surface) -> list[pg.rect.Rect]:
-        """
-        Overwrite orginal draw method of RenderPlain.
-        """
-        sprites = self.sprites()
-        if hasattr(surface, "blits"):
-            self.spritedict.update(
-                zip(sprites, surface.blits((spr.image, spr.rect) for spr in sprites))
-            )
-        else:
-            for spr in sprites:
-                self.spritedict[spr] = surface.blit(spr.image, spr.rect)
+    def update(self, dt: float, level: Level) -> None:
+        self.player.update(dt, level)
+        self.feets.update(dt, target=self.player)
 
-        if DEBUG_SPRITE:
-            for spr in sprites:
-                spr.draw_border(surface, spr)
-
-        self.lostsprites = []
-        dirty = self.lostsprites
-
-        return dirty
+    def draw(self, surface: pg.surface.Surface, camera: Camera) -> None:
+        """Custom variant of the builtin method draw()."""
+        for sprite in self.sprites():
+            offset = sprite.rect.topleft - camera.offset
+            surface.blit(sprite.image, offset)
+            if DEBUG_SPRITE and hasattr(sprite, "bounding_rect"):
+                rect = sprite.bounding_rect.copy()
+                rect.x = offset.x + sprite.bounding_rect_offset_x
+                rect.y = offset.y + sprite.bounding_rect_offset_y
+                pg.draw.rect(surface, RED, rect, width=1)
 
 
-class PlayerCore(AnimatedSprite):
+class Player(AnimatedSprite):
 
-    """Player core class."""
+    """Player class."""
 
-    def __init__(self, _group) -> None:
-        super().__init__()
-        self.group = _group  # Reference to the group with other player object.
-
-    @property
-    def x(self) -> int:
-        """Returns the absolute x coordinate of the player."""
-        return self.group.camera.x
-
-    @property
-    def y(self) -> int:
-        """Returns the absolute y coordinate of the player."""
-        return self.group.camera.y
-
-    @property
-    def virt_pos(self) -> tuple[int, int]:
-        """Get the virtual position (rect) of the player on the screen."""
-        return self.rect.center
-
-    @property
-    def virt_x(self) -> int:
-        """Get the virtual x coordinate (rect) of the player on the screen."""
-        return self.rect.centerx
-
-    @property
-    def virt_y(self) -> int:
-        """Get the virtual y coordinate (rect) of the player on the screen."""
-        return self.rect.centery
-
-    @property
-    def angle(self) -> float:
-        """Get the angle (radian) of the player based of the cursor position on the screen."""
-        return (
-            math.atan2(
-                self.group.viewpoint.y - self.virt_y,
-                self.group.viewpoint.x - self.virt_x,
-            )
-            + 2 * math.pi
-        ) % (2 * math.pi)
-
-    def draw_border(
-        self, surface: pg.surface.Surface, sprite: pg.sprite.Sprite
+    def __init__(
+        self,
+        camera: Camera,
+        viewpoint: Viewpoint,
+        feets: PlayerFeets,
+        x: int,
+        y: int,
     ) -> None:
-        pg.draw.rect(surface, GREEN, self.bounding_rect, width=1)
+        super().__init__()
+        self.camera = camera
+        self.viewpoint = viewpoint
+        self.feets = feets
 
-
-class Player(PlayerCore):
-
-    """Player object/sprite."""
-
-    def __init__(self, _group) -> None:
-        super().__init__(_group)
         self.movement_state = UpperBodyState.IDLE
         self.weapon_state = WeaponsState.HANDGUN
 
@@ -134,164 +77,263 @@ class Player(PlayerCore):
             for image in spritesheet:
                 image.deserialize()
 
-        # Initialize sprite image.
+        # Ensure to set rect first. Otherwise rect is None in image setter.
+        self.rect = self.sprite.image.get_frect(center=(x, y))
         self.image = self.sprite.image
-        # Rect acts as the virtual position (center of the screen).
-        self.rect = self.sprite.rect
-        # Virtual position the image at the center of the screen.
-        # The position of image/rect used for drawing only.
-        self.rect.center = (self.group.screen.centerx, self.group.screen.centery)
-        # Initialize the bounding rect.
-        self.bounding_rect = self.image.get_bounding_rect()
+        self.bounding_rect = pg.FRect(self.image.get_bounding_rect())
 
     @property
-    def weapon_angle(self) -> float:
-        """Get the angle of the weapon based of the cursor position on the screen."""
+    def x(self) -> float:
+        return self.rect.centerx
+
+    @property
+    def y(self) -> float:
+        return self.rect.centery
+
+    @x.setter
+    def x(self, _x: float) -> None:
+        self.rect.centerx = _x
+        self.bounding_rect.x = self.rect.x + self.bounding_rect_offset_x
+
+    @y.setter
+    def y(self, _y: float) -> None:
+        self.rect.centery = _y
+        self.bounding_rect.y = self.rect.y + self.bounding_rect_offset_y
+
+    @property
+    def angle(self) -> float:
+        """Get the angle (radian) of the player based of the
+        cursor position on the screen."""
         return (
             math.atan2(
-                self.group.viewpoint.y - self.virt_weapon_y,
-                self.group.viewpoint.x - self.virt_weapon_x,
+                self.viewpoint.y - (self.y - self.camera.y),
+                self.viewpoint.x - (self.x - self.camera.x),
             )
             + 2 * math.pi
         ) % (2 * math.pi)
 
     @property
-    def weapon_x(self) -> int:
-        """Get the real x coordinate of the weapon in the game world."""
-        offset1 = 13  # @todo: Remove it!
-        offset2 = 15  # @todo: Remove it!
-        angle = self.angle
-        return round(
-            self.x - math.cos(angle - math.pi / 2) * offset1 + math.cos(angle) * offset2
-        )
+    def image(self) -> Optional[pg.surface.Surface]:
+        """Overwrite getter of pg.sprite.Sprite."""
+        return self.__image
+
+    @image.setter
+    def image(self, _image: Optional[pg.surface.Surface]) -> None:
+        """Overwrite setter of pg.sprite.Sprite to always center the rect."""
+        _rect = _image.get_frect()
+        _rect.center = (self.x, self.y)
+        self.__image = _image
+        self.rect = _rect
+        self.bounding_rect = pg.FRect(_image.get_bounding_rect())
 
     @property
-    def weapon_y(self) -> int:
-        """Get the real y coordinate of the weapon in the game world."""
-        offset1 = 13  # @todo: Remove it!
-        offset2 = 15  # @todo: Remove it!
-        angle = self.angle
-        return round(
-            self.y - math.sin(angle - math.pi / 2) * offset1 + math.sin(angle) * offset2
-        )
+    def bounding_rect(self) -> Optional[pg.FRect]:
+        return self._bounding_rect
 
+    @bounding_rect.setter
+    def bounding_rect(self, _bounding_rect: Optional[pg.FRect]) -> None:
+        self._bounding_rect = _bounding_rect
+        # The initial x, y of the bounding_rect are the offsets for the bounding rect.
+        self.bounding_rect_offset_x = _bounding_rect.x
+        self.bounding_rect_offset_y = _bounding_rect.y
+        self._bounding_rect.x = self.rect.x + _bounding_rect.x
+        self._bounding_rect.y = self.rect.y + _bounding_rect.y
+
+    # @todo.....
     @property
-    def virt_weapon_x(self) -> int:
-        """Get the virtual x coordinate of weapon on the screen."""
-        offset1 = 13  # @todo: Remove it!
-        offset2 = 15  # @todo: Remove it!
-        angle = self.angle
-        return round(
-            self.virt_x
-            - math.cos(angle - math.pi / 2) * offset1
-            + math.cos(angle) * offset2
+    def move_vector(self) -> tuple[float, float]:
+        """If the object moves diagonal add only the half of the speed
+        in each direction."""
+        if self.direction[0] != 0 and self.direction[1] != 0:
+            # Based on the 45° angle
+            return (
+                -1 * self.direction[0] * abs(math.cos(math.pi / 4)) * self.speed,
+                -1 * self.direction[1] * abs(math.sin(math.pi / 4)) * self.speed,
+            )
+        return (
+            -1 * self.direction[0] * self.speed,
+            -1 * self.direction[1] * self.speed,
         )
 
-    @property
-    def virt_weapon_y(self) -> int:
-        """Get the virtual y coordinate of weapon on the screen."""
-        offset1 = 13  # @todo: Remove it!
-        offset2 = 15  # @todo: Remove it!
-        angle = self.angle
-        return round(
-            self.virt_y
-            - math.sin(angle - math.pi / 2) * offset1
-            + math.sin(angle) * offset2
-        )
+    def input(self):
+        keystate = pg.key.get_pressed()
+        self.direction.x = keystate[pg.K_d] - keystate[pg.K_a]
+        self.direction.y = keystate[pg.K_s] - keystate[pg.K_w]
+        self.feets.input(self.direction)  # Update player feets direction.
 
-    def update(self, dt: int, direction: tuple[int, int]) -> None:
-        """Update the player upper body."""
-        super().update(dt, direction)
-        self.group.camera.move(self.move_vector)
-        self.collide()
-        self.rotate()
+    def update(self, dt: float, level: Level) -> None:
+        super().update(dt)
 
-    def animate(self) -> None:
-        # If not attacking.
-        if self.movement_state in (UpperBodyState.IDLE, UpperBodyState.MOVE):
-            if self.direction[0] == 0 and self.direction[1] == 0:
-                # Idle state
-                self._switch_movement(UpperBodyState.IDLE)
-            elif self.direction[0] != 0 or self.direction[1] != 0:
-                # Move state
-                self._switch_movement(UpperBodyState.MOVE)
+        # Process input.
+        self.input()
+
+        # Move player considerung the collision.
+        tiles = level.tiles.tiles_movement_collision_on_screen.sprites()
+        self.move(dt, tiles)
+        # Rotate player considerung the collision.
+        self.rotate(self.angle, tiles)
+
+        # Move camera base on the player position.
+        self.camera.update(target=self)
+
+    def move(self, dt: float, group: pg.sprite.Group) -> None:
+        x_orig = self.x
+        for dx in range(1, round(self.speed * dt) + 1):
+            x_prev = self.x
+            self.x = x_orig + dx * self.direction.x
+            if bool(pg.sprite.spritecollide(self, group, False, self.is_collided)):
+                self.x = x_prev
+                break
+
+        y_orig = self.y
+        for dy in range(1, round(self.speed * dt) + 1):
+            y_prev = self.y
+            self.y = y_orig + dy * self.direction.y
+            if bool(pg.sprite.spritecollide(self, group, False, self.is_collided)):
+                self.y = y_prev
+                break
+
+    def rotate(self, angle: float, group: pg.sprite.Group) -> None:
+        """Try to rotate. If collide the image (rect, bounding_rect) will be reset."""
+        image_orig = self.image
+        # Try to rotate, if collide reset.
+        self.image = self.sprite.rotate(angle)
+        if bool(pg.sprite.spritecollide(self, group, False, self.is_collided)):
+            self.image = image_orig
         else:
-            pass
+            # Rotate player feets omly if there is no collision.
+            self.feets.rotate(angle)
 
-    def rotate(self) -> None:
-        """Rotate the player upper body sprite on the center."""
-        # Rotate the image and get the pre-calculated bounding rect from list
-        # and replace old rect/bounding_rect with new one.
-        self.image, self.rect, self.bounding_rect = self.sprite.rotate(
-            self.angle, self.virt_x, self.virt_y
-        )
-
-    def collide(self):
-        """Check for collision with other tiles."""
-        for tile in self.group.level.tiles_collision_move.sprites():
-            if self.collide_x(tile) and self.collide_y(tile):
-                print("collide:", tile)
-
-    def collide_x(self, tile: Tile) -> bool:
-        """Check collision on x axis."""
-        width = self.bounding_rect.width
-        return (
-            self.x + width // 2 > tile.x and self.x - width // 2 < tile.x + tile.width
-        )
-
-    def collide_y(self, tile: Tile) -> bool:
-        """Check collision on y axis."""
-        height = self.bounding_rect.height
-        return (
-            self.y + height // 2 > tile.y
-            and self.y - height // 2 < tile.y + tile.height
-        )
-
-
-class PlayerFeets(PlayerCore):
-
-    """Player lower body / feets object/sprite."""
-
-    def __init__(self, _group) -> None:
-        super().__init__(_group)
-        self.movement_state = LowerBodyState.IDLE
-
-        spritesheet_paths = []
-        for movement in LowerBodyState:
-            spritesheet_paths.append(f"player/default/feets/{movement.name.lower()}")
-        with multiprocessing.Pool() as pool:
-            self.sprites = pool.map(Spritesheet, spritesheet_paths)
-        for spritesheet in self.sprites:
-            for image in spritesheet:
-                image.deserialize()
-
-        # Initialize sprite image.
-        self.image = self.sprite.image
-        # Rect acts as the virtual position (center of the screen).
-        self.rect = self.sprite.rect
-        # Virtual position the image at the center of the screen.
-        # The position of image/rect used for drawing only.
-        self.rect.center = (self.group.screen.centerx, self.group.screen.centery)
-        # Initialize the bounding rect.
-        self.bounding_rect = self.image.get_bounding_rect()
-
-    def update(self, dt: int, direction: tuple[int, int]) -> None:
-        """Update the player lower body / feets."""
-        super().update(dt, direction)
-        self.rotate()
+    def is_collided(self, player, tile) -> bool:
+        """Callback function for check_collision."""
+        return player.bounding_rect.colliderect(tile.bounding_rect)
 
     def animate(self) -> None:
-        if self.direction[0] == 0 and self.direction[1] == 0:
-            # Idle state
-            self._switch_movement(LowerBodyState.IDLE)
-        elif self.direction[0] != 0 or self.direction[1] != 0:
-            # Walk state
-            self._switch_movement(LowerBodyState.WALK)
+        super().animate()
 
-    def rotate(self) -> None:
-        """Rotate the player lower body / feets sprite on the center."""
-        # Rotate the image and get the pre-calculated bounding rect from list
-        # and replace old rect/bounding_rect with new one.
-        self.image, self.rect, self.bounding_rect = self.sprite.rotate(
-            self.angle, self.virt_x, self.virt_y
-        )
+
+# class Player(PlayerCore):
+#
+#     """Player object/sprite."""
+#
+#     def __init__(self, _group) -> None:
+#         super().__init__(_group)
+#         self.movement_state = UpperBodyState.IDLE
+#         self.weapon_state = WeaponsState.HANDGUN
+#
+#         spritesheet_paths = []
+#         for movement in UpperBodyState:
+#             for weapon in (self.weapon_state,):
+#                 spritesheet_paths.append(
+#                     f"player/default/weapons/{weapon.name.lower()}/{movement.name.lower()}"
+#                 )
+#         with multiprocessing.Pool() as pool:
+#             self.sprites = pool.map(Spritesheet, spritesheet_paths)
+#         for spritesheet in self.sprites:
+#             for image in spritesheet:
+#                 image.deserialize()
+#
+#         # Initialize sprite image.
+#         self.image = self.sprite.image
+#         # Rect acts as the virtual position (center of the screen).
+#         self.rect = self.sprite.rect
+#         # Virtual position the image at the center of the screen.
+#         # The position of image/rect used for drawing only.
+#         self.rect.center = (
+#             self.group.camera.screenx,
+#             self.group.camera.screeny,
+#         )
+#         # Initialize the bounding rect.
+#         self.bounding_rect = self.image.get_bounding_rect()
+#
+#     @property
+#     def weapon_angle(self) -> float:
+#         """Get the angle of the weapon based of the cursor position
+#         on the screen."""
+#         return (
+#             math.atan2(
+#                 self.group.viewpoint.y - self.virt_weapon_y,
+#                 self.group.viewpoint.x - self.virt_weapon_x,
+#             )
+#             + 2 * math.pi
+#         ) % (2 * math.pi)
+#
+#     @property
+#     def weapon_x(self) -> int:
+#         """Get the real x coordinate of the weapon in the game world."""
+#         offset1 = 13  # @todo: Remove it!
+#         offset2 = 15  # @todo: Remove it!
+#         angle = self.angle
+#         return round(
+#             self.x - math.cos(angle - math.pi / 2) * offset1 + math.cos(angle) * offset2
+#         )
+#
+#     @property
+#     def weapon_y(self) -> int:
+#         """Get the real y coordinate of the weapon in the game world."""
+#         offset1 = 13  # @todo: Remove it!
+#         offset2 = 15  # @todo: Remove it!
+#         angle = self.angle
+#         return round(
+#             self.y - math.sin(angle - math.pi / 2) * offset1 + math.sin(angle) * offset2
+#         )
+#
+#     @property
+#     def virt_weapon_x(self) -> int:
+#         """Get the virtual x coordinate of weapon on the screen."""
+#         offset1 = 13  # @todo: Remove it!
+#         offset2 = 15  # @todo: Remove it!
+#         angle = self.angle
+#         return round(
+#             self.virt_x
+#             - math.cos(angle - math.pi / 2) * offset1
+#             + math.cos(angle) * offset2
+#         )
+#
+#     @property
+#     def virt_weapon_y(self) -> int:
+#         """Get the virtual y coordinate of weapon on the screen."""
+#         offset1 = 13  # @todo: Remove it!
+#         offset2 = 15  # @todo: Remove it!
+#         angle = self.angle
+#         return round(
+#             self.virt_y
+#             - math.sin(angle - math.pi / 2) * offset1
+#             + math.sin(angle) * offset2
+#         )
+#
+#     def rect_range_of_movement(self, speed_per_frame: float) -> pg.FRect:
+#         """Returns the rect that covers the movement (speed) of the current frame
+#         around the player in each direction."""
+#         return pg.FRect(
+#             self.x - self.width / 2 - speed_per_frame,
+#             self.y - self.height / 2 - speed_per_frame,
+#             self.width + speed_per_frame * 2,
+#             self.height + speed_per_frame * 2,
+#         )
+#
+#     def update(self, dt: float, direction: tuple[int, int]) -> None:
+#         """Update the player upper body."""
+#         super().update(dt, direction)
+#
+#         self.camera.update(target=self.player)
+#         speed_per_frame = self.speed * dt
+#         self.group.camera.x = self.group.camera.x + self.speed * dt * direction[0]
+#         self.group.camera.y = self.group.camera.y + self.speed * dt * direction[1]
+#
+#         closest_tiles = self.group.level.tiles.tiles_movement_collision.sprites()
+#         # closest_tiles = self.group.level.tiles_collision_move.closest_sprites(
+#         # rect=self.rect_range_of_movement(speed_per_frame)
+#         # )
+#         # self.partial_move_x(direction[0], speed_per_frame, closest_tiles)
+#         # self.partial_move_y(direction[1], speed_per_frame, closest_tiles)
+#
+#         self.rotate()
+#
+#     def rotate(self) -> None:
+#         """Rotate the player upper body sprite on the center."""
+#         # Rotate the image and get the pre-calculated bounding rect from list
+#         # and replace old rect/bounding_rect with new one.
+#         self.image, self.rect, self.bounding_rect = self.sprite.rotate(
+#             self.angle, self.virt_x, self.virt_y
+#         )
