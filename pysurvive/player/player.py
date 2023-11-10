@@ -27,7 +27,7 @@ class PlayerGroup(pg.sprite.Group):
         super().__init__()
         self.feets = PlayerFeets()
         self.player = Player(camera, viewpoint, self.feets, x=500, y=600)
-        self.add((self.player, self.feets))
+        self.add((self.feets, self.player))
 
     def update(self, dt: float, level: Level) -> None:
         self.player.update(dt, level)
@@ -176,6 +176,8 @@ class Player(AnimatedSprite):
         # Move camera base on the player position.
         self.camera.update(target=self)
 
+        self.animate()
+
     def move(self, dt: float, group: pg.sprite.Group) -> None:
         x_orig = self.x
         for dx in range(1, round(self.speed * dt) + 1):
@@ -210,6 +212,7 @@ class Player(AnimatedSprite):
 
     def animate(self) -> None:
         super().animate()
+        self.feets.animate(self.angle)
 
 
 # class Player(PlayerCore):

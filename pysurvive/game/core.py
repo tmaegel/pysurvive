@@ -54,12 +54,6 @@ class Camera(pg.sprite.Group):
         """Returns the camera / screen rect."""
         return pg.FRect(self.x, self.y, self.width, self.height)
 
-    @property
-    def near_area_rect(self) -> pg.FRect:
-        return pg.FRect(
-            self.x + self.screenx - 75, self.y + self.screeny - 75, 150, 150
-        )
-
     def update(self, target) -> None:
         if target.x < self.camera_box.left:
             self.camera_box.left = target.x

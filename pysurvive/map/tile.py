@@ -138,10 +138,10 @@ class TileGroupManager:
                 self.tiles_movement_collision_on_screen.add(sprite)
 
         # Update tiles close to camera.
-        self.tiles_close_to_player.empty()
-        self.tiles_close_to_player.add(
-            camera.near_area_rect.collideobjectsall(self.tiles_on_screen.sprites())
-        )
+        # self.tiles_close_to_player.empty()
+        # self.tiles_close_to_player.add(
+        #     camera.near_area_rect.collideobjectsall(self.tiles_on_screen.sprites())
+        # )
 
         self.tiles_all.update(camera)  # Update all tiles on the camera/screen.
 

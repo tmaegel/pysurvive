@@ -5,7 +5,12 @@ from typing import Optional
 
 import pygame as pg
 
-from pysurvive.player.misc import AnimatedSprite, LowerBodyState, Spritesheet
+from pysurvive.player.misc import (
+    AnimatedSprite,
+    LowerBodyState,
+    RotatableImage,
+    Spritesheet,
+)
 
 
 class PlayerFeets(AnimatedSprite):
@@ -15,9 +20,6 @@ class PlayerFeets(AnimatedSprite):
     def __init__(self) -> None:
         super().__init__()
         self.movement_state = LowerBodyState.IDLE
-
-        # 256 // 2 = 128
-        # x_offset, y_offset = (112, 135)  # already scaled with 2
 
         spritesheet_paths = []
         for movement in LowerBodyState:
@@ -31,29 +33,6 @@ class PlayerFeets(AnimatedSprite):
         # Ensure to set rect first. Otherwise rect is None in image setter.
         self.rect = self.sprite.image.get_frect()
         self.image = self.sprite.image
-
-        # Virtual position the image at the center of the screen.
-        # The position of image/rect used for drawing only.
-        # self.rect.center = (
-        #     x_offset - self.rect.width // 2 + self.group.camera.screenx,
-        #     y_offset - self.rect.height // 2 + self.group.camera.screeny,
-        # )
-        # self.rect.center = (
-        #     round(
-        #         self.group.player.virt_x
-        #         - math.cos(self.group.player.weapon_angle) * self.feet_offset_px
-        #         - math.cos(self.group.player.weapon_angle - math.pi / 2)
-        #         * self.feet_offset_px
-        #         // 2
-        #     ),
-        #     round(
-        #         self.group.player.virt_y
-        #         - math.sin(self.group.player.weapon_angle) * self.feet_offset_px
-        #         - math.sin(self.group.player.weapon_angle - math.pi / 2)
-        #         * self.feet_offset_px
-        #         // 2
-        #     ),
-        # )
 
     @property
     def x(self) -> float:
@@ -96,11 +75,47 @@ class PlayerFeets(AnimatedSprite):
     def rotate(self, angle: float) -> None:
         self.image = self.sprite.rotate(angle)
 
-    def animate(self) -> None:
+    def animate(self, angle: float) -> None:
         super().animate()
         if self.direction.x == 0 and self.direction.y == 0:
             # Idle state
             self._switch_movement(LowerBodyState.IDLE)
         elif self.direction.x != 0 or self.direction.y != 0:
             # Walk state
-            self._switch_movement(LowerBodyState.WALK)
+            degree = abs(RotatableImage.angle_to_degree(angle))
+            if degree > 315 and degree <= 360 or degree >= 0 and degree <= 45:
+                if self.direction.y == 0:
+                    # Walk on x-axis only.
+                    self._switch_movement(LowerBodyState.WALK)
+                else:
+                    if self.direction.y < 0:
+                        self._switch_movement(LowerBodyState.WALK_LEFT)
+                    else:
+                        self._switch_movement(LowerBodyState.WALK_RIGHT)
+            elif degree > 45 and degree <= 135:
+                if self.direction.x == 0:
+                    # Walk on y-axis only.
+                    self._switch_movement(LowerBodyState.WALK)
+                else:
+                    if self.direction.x < 0:
+                        self._switch_movement(LowerBodyState.WALK_RIGHT)
+                    else:
+                        self._switch_movement(LowerBodyState.WALK_LEFT)
+            elif degree > 135 and degree <= 225:
+                if self.direction.y == 0:
+                    # Walk on x-axis only.
+                    self._switch_movement(LowerBodyState.WALK)
+                else:
+                    if self.direction.y < 0:
+                        self._switch_movement(LowerBodyState.WALK_RIGHT)
+                    else:
+                        self._switch_movement(LowerBodyState.WALK_LEFT)
+            elif degree > 225 and degree <= 315:
+                if self.direction.x == 0:
+                    # Walk on y-axis only.
+                    self._switch_movement(LowerBodyState.WALK)
+                else:
+                    if self.direction.x < 0:
+                        self._switch_movement(LowerBodyState.WALK_LEFT)
+                    else:
+                        self._switch_movement(LowerBodyState.WALK_RIGHT)

@@ -80,12 +80,14 @@ class RotatableImage:
 
     @staticmethod
     def angle_to_radian(degree: int) -> float:
-        """Angle from degree to radian."""
+        """Angle from degree to radian.
+        Negative angle amounts will rotate clockwise."""
         return -1 * degree * math.pi / 180
 
     @staticmethod
     def angle_to_degree(radian: float) -> int:
-        """Angle from radian to degree."""
+        """Angle from radian to degree.
+        Negative angle amounts will rotate clockwise."""
         return int(-1 * radian * 180 / math.pi)
 
     @staticmethod
@@ -152,7 +154,6 @@ class AnimatedSprite(pg.sprite.Sprite):
             # Limit the frame to the length of the image list.
             self.frame %= len(self.sprites[self.movement_state.value])
             # Handle the different images for animation here
-            self.animate()
 
     def animate(self) -> None:
         pass
