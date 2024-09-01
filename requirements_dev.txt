@@ -6,11 +6,10 @@
 #
 astroid==2.11.7
     # via pylint
-attrs==23.1.0
+attrs==24.2.0
     # via
-    #   -r requirements.txt
+    #   -c requirements.txt
     #   pytest
-    #   pytiled-parser
 coverage==6.4.1
     # via -r requirements_dev.in
 dill==0.3.7
@@ -41,10 +40,6 @@ mypy-extensions==0.4.3
     # via
     #   -r requirements_dev.in
     #   mypy
-numpy==1.22.4
-    # via
-    #   -r requirements.txt
-    #   triangle
 packaging==23.2
     # via
     #   pytest
@@ -65,14 +60,10 @@ pycodestyle==2.8.0
     # via flake8
 pyflakes==2.4.0
     # via flake8
-pygame-ce==2.3.2
-    # via -r requirements.txt
 pylint==2.14.2
     # via -r requirements_dev.in
 pytest==7.1.2
     # via -r requirements_dev.in
-pytiled-parser==2.2.1
-    # via -r requirements.txt
 six==1.16.0
     # via tox
 toml==0.10.2
@@ -83,13 +74,10 @@ tomlkit==0.12.2
     # via pylint
 tox==3.25.0
     # via -r requirements_dev.in
-triangle==20230923
-    # via -r requirements.txt
-typing-extensions==4.8.0
+typing-extensions==4.12.2
     # via
-    #   -r requirements.txt
+    #   -c requirements.txt
     #   mypy
-    #   pytiled-parser
 virtualenv==20.24.6
     # via tox
 wrapt==1.15.0
