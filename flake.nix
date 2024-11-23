@@ -14,6 +14,7 @@
     {
       devShells.x86_64-linux.default = pkgs.mkShell {
         venvDir = "./venv";
+        buildInputs = [ pkgs.bashInteractive ];
         nativeBuildInputs = with pkgs; [
           python312
           python312Packages.venvShellHook
